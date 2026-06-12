@@ -23,6 +23,7 @@ button{padding:12px 20px;border:0;border-radius:8px;background:#0066ff;color:whi
 <div class="box">
     <div class="score">🐍 Snake: <span id="snake">0</span></div>
     <div class="score">🎯 Klickspel: <span id="clicker">0</span></div>
+    <div class="score">🐦 Flappy: <span id="flappy">0</span></div>
     <div class="score">🧠 Memory rekord: <span id="memory">-</span> försök</div>
 
     <button onclick="resetScores()">Nollställ rekord</button>
@@ -34,13 +35,14 @@ button{padding:12px 20px;border:0;border-radius:8px;background:#0066ff;color:whi
 document.getElementById("snake").textContent = localStorage.getItem("snakeHighscore") || 0;
 document.getElementById("clicker").textContent = localStorage.getItem("clickerHighscore") || 0;
 document.getElementById("memory").textContent = localStorage.getItem("memoryBest") || "-";
-
+document.getElementById("flappy").textContent = localStorage.getItem("flappyHighscore") || 0;
 function resetScores(){
     if(confirm("Vill du verkligen nollställa alla rekord?")){
         localStorage.removeItem("snakeHighscore");
         localStorage.removeItem("clickerHighscore");
         localStorage.removeItem("memoryBest");
         location.reload();
+        localStorage.removeItem("flappyHighscore");
     }
 }
 </script>
