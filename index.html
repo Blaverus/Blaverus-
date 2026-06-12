@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="sv">
 <head>
@@ -8,82 +6,97 @@
 <title>Blaverus</title>
 
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
+*{margin:0;padding:0;box-sizing:border-box}
 
 body{
-    font-family:Arial, sans-serif;
-    background:#0d1117;
+    font-family:Arial,sans-serif;
+    background:linear-gradient(180deg,#050816,#0d1117);
     color:white;
 }
 
 header{
+    padding:70px 20px;
     text-align:center;
-    padding:60px 20px;
-    background:linear-gradient(135deg,#0066ff,#00aaff);
+    background:radial-gradient(circle at top,#0077ff55,#050816 65%);
 }
 
-header h1{
+.logo{
     font-size:4rem;
-    margin-bottom:10px;
+    font-weight:bold;
 }
 
-header p{
+.tagline{
+    margin-top:10px;
+    color:#c9d1d9;
     font-size:1.2rem;
 }
 
 .container{
-    max-width:1200px;
+    max-width:1150px;
     margin:auto;
-    padding:40px 20px;
+    padding:35px 20px;
+}
+
+.section-title{
+    margin-bottom:25px;
+    font-size:2rem;
 }
 
 .games{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
-    gap:25px;
+    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:22px;
 }
 
 .card{
-    background:#161b22;
-    border-radius:15px;
+    background:linear-gradient(180deg,#161b22,#0d1117);
+    border:1px solid #30363d;
+    border-radius:18px;
     padding:25px;
-    transition:0.3s;
+    box-shadow:0 10px 25px #00000055;
+    transition:0.25s;
 }
 
 .card:hover{
-    transform:translateY(-5px);
+    transform:translateY(-6px);
+    border-color:#00aaff;
 }
 
 .card h2{
-    margin-bottom:10px;
+    margin-bottom:12px;
 }
 
 .card p{
-    margin-bottom:20px;
+    color:#c9d1d9;
+    min-height:55px;
 }
 
 .button{
     display:inline-block;
-    padding:12px 20px;
-    background:#0066ff;
+    margin-top:18px;
+    padding:12px 18px;
+    background:linear-gradient(135deg,#0066ff,#00aaff);
     color:white;
     text-decoration:none;
-    border-radius:8px;
+    border-radius:10px;
+    font-weight:bold;
 }
 
-.button:hover{
-    background:#0050cc;
+.badge{
+    display:inline-block;
+    margin-top:12px;
+    padding:6px 10px;
+    border-radius:999px;
+    background:#f59e0b;
+    color:#111;
+    font-size:0.85rem;
+    font-weight:bold;
 }
 
 footer{
     text-align:center;
     padding:30px;
-    margin-top:40px;
-    color:#999;
+    color:#8b949e;
 }
 </style>
 </head>
@@ -91,58 +104,53 @@ footer{
 <body>
 
 <header>
-    <h1>🎮 Blaverus</h1>
-    <p>Livet suger sen dör man.</p>
+    <div class="logo">🎮 Blaverus</div>
+    <p class="tagline">Små spel. Stora utmaningar.</p>
 </header>
 
 <div class="container">
+    <h1 class="section-title">Spel</h1>
 
-<h2 style="margin-bottom:20px;">Våra spel</h2>
+    <div class="games">
 
-<div class="games">
+        <div class="card">
+            <h2>🐍 Snake</h2>
+            <p>Klassiska Snake. Samla poäng och slå ditt rekord.</p>
+            <a class="button" href="snake.html">Spela</a>
+        </div>
 
-<div class="card">
-    <h2>🐍 Snake</h2>
-    <p>Det klassiska spelet där du samlar poäng och växer.</p>
-    <a class="button" href="snake.html">Spela nu</a>
-</div>
+        <div class="card">
+            <h2>🧠 Memory</h2>
+            <p>Hitta alla par på så få försök som möjligt.</p>
+            <a class="button" href="memory.html">Spela</a>
+        </div>
 
-<div class="card">
-    <h2>🧠 Memory</h2>
-    <p>Hitta alla par på så få försök som möjligt.</p>
-    <a class="button" href="memory.html">Spela nu</a>
-</div>
+        <div class="card">
+            <h2>🎯 Klickspel</h2>
+            <p>Klicka så många gånger du kan på 10 sekunder.</p>
+            <a class="button" href="clicker.html">Spela</a>
+        </div>
 
-<div class="card">
-    <h2>🚗 Bilspel</h2>
-    <p>Undvik hinder och samla poäng.</p>
-    <a class="button" href="car.html">Spela nu</a>
-</div>
+        <div class="card">
+            <h2>🚗 Bilspel</h2>
+            <p>Undvik hinder och samla poäng.</p>
+            <a class="button" href="car.html">Spela</a>
+        </div>
 
-<div class="card">
-    <h2>🎯 Klickspel</h2>
-    <p>Klicka så många gånger du kan på 10 sekunder.</p>
-    <a class="button" href="clicker.html">Spela nu</a>
-</div>
-    
-<div class="card">
-    <h2>🏆 Topplista</h2>
-    <p>Se dina bästa resultat i alla spel.</p>
-    <a class="button" href="highscore.html">Visa rekord</a>
-</div>
+        <div class="card">
+            <h2>🐦 Flappy</h2>
+            <p>Testversion. Spelet är under utveckling och kan vara svårt.</p>
+            <span class="badge">TESTVERSION</span><br>
+            <a class="button" href="flappy.html">Testa</a>
+        </div>
 
-<div class="card">
-    <h2>🐦 Flappy</h2>
-    <p>Flyg mellan rören och samla poäng.</p>
-    <a class="button" href="flappy.html">Spela nu</a>
-</div>
+        <div class="card">
+            <h2>🏆 Topplista</h2>
+            <p>Se dina bästa resultat från spelen.</p>
+            <a class="button" href="highscore.html">Visa rekord</a>
+        </div>
 
-
-</div>
-</div>
-
-</div>
-
+    </div>
 </div>
 
 <footer>
