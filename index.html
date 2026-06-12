@@ -3,249 +3,86 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Blaverus Fem i Rad</title>
+<title>Blaverus</title>
 <style>
-*{box-sizing:border-box}
-body{
-    margin:0;
-    font-family:Arial,sans-serif;
-    background:#0d1117;
-    color:white;
-    text-align:center;
-}
-header{
-    padding:22px;
-    background:linear-gradient(135deg,#0066ff,#00aaff);
-}
-.wrap{
-    max-width:900px;
-    margin:auto;
-    padding:20px;
-}
-.info{
-    display:flex;
-    justify-content:center;
-    gap:15px;
-    flex-wrap:wrap;
-    margin:15px 0;
-}
-.pill{
-    background:#161b22;
-    border:1px solid #30363d;
-    padding:10px 16px;
-    border-radius:999px;
-}
-.board-wrap{
-    overflow:auto;
-    padding:18px;
-    background:#161b22;
-    border-radius:18px;
-    border:1px solid #30363d;
-}
-.board{
-    display:grid;
-    grid-template-columns:repeat(15,36px);
-    grid-template-rows:repeat(15,36px);
-    gap:0;
-    width:max-content;
-    margin:auto;
-    background:#d6a85d;
-    padding:18px;
-    border-radius:12px;
-    box-shadow:inset 0 0 0 4px #8b5e2a;
-}
-.cell{
-    width:36px;
-    height:36px;
-    border:1px solid rgba(60,35,10,0.55);
-    background:transparent;
-    position:relative;
-    cursor:pointer;
-}
-.cell:hover::after{
-    content:"";
-    position:absolute;
-    width:22px;
-    height:22px;
-    border-radius:50%;
-    left:50%;
-    top:50%;
-    transform:translate(-50%,-50%);
-    background:rgba(255,255,255,0.35);
-}
-.stone{
-    position:absolute;
-    width:28px;
-    height:28px;
-    border-radius:50%;
-    left:50%;
-    top:50%;
-    transform:translate(-50%,-50%);
-    box-shadow:0 4px 8px rgba(0,0,0,0.45);
-}
-.blue .stone{
-    background:radial-gradient(circle at 30% 30%,#93c5fd,#1d4ed8 65%,#0b2a7a);
-}
-.red .stone{
-    background:radial-gradient(circle at 30% 30%,#fca5a5,#dc2626 65%,#7f1d1d);
-}
-.win .stone{
-    outline:4px solid #22c55e;
-    outline-offset:2px;
-}
-button.action{
-    padding:12px 20px;
-    margin:10px;
-    border:0;
-    border-radius:10px;
-    background:#0066ff;
-    color:white;
-    font-size:1rem;
-    cursor:pointer;
-}
-a{color:#00aaff}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:linear-gradient(180deg,#050816,#0d1117);color:white}
+header{padding:70px 20px;text-align:center;background:radial-gradient(circle at top,#0077ff55,#050816 65%)}
+.logo{font-size:4rem;font-weight:bold}
+.tagline{margin-top:10px;color:#c9d1d9;font-size:1.2rem}
+.container{max-width:1150px;margin:auto;padding:35px 20px}
+.section-title{margin-bottom:25px;font-size:2rem}
+.games{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px}
+.card{background:linear-gradient(180deg,#161b22,#0d1117);border:1px solid #30363d;border-radius:18px;padding:25px;box-shadow:0 10px 25px #00000055;transition:.25s}
+.card:hover{transform:translateY(-6px);border-color:#00aaff}
+.card h2{margin-bottom:12px}
+.card p{color:#c9d1d9;min-height:55px}
+.button{display:inline-block;margin-top:18px;padding:12px 18px;background:linear-gradient(135deg,#0066ff,#00aaff);color:white;text-decoration:none;border-radius:10px;font-weight:bold}
+.badge{display:inline-block;margin-top:12px;padding:6px 10px;border-radius:999px;background:#f59e0b;color:#111;font-size:.85rem;font-weight:bold}
+footer{text-align:center;padding:30px;color:#8b949e}
 </style>
 </head>
 <body>
 
 <header>
-<h1>🔵🔴 Fem i Rad</h1>
-<p>Först med fem stenar i rad vinner</p>
+    <div class="logo">🎮 Blaverus</div>
+    <p class="tagline">Små spel. Stora utmaningar.</p>
 </header>
 
-<div class="wrap">
+<div class="container">
+<h1 class="section-title">Spel</h1>
 
-<div class="info">
-    <div class="pill" id="status">Blå börjar</div>
-    <div class="pill">Bräde: 15 × 15</div>
+<div class="games">
+
+<div class="card">
+    <h2>🐍 Snake</h2>
+    <p>Klassiska Snake. Samla poäng och slå ditt rekord.</p>
+    <a class="button" href="snake.html">Spela</a>
 </div>
 
-<div class="board-wrap">
-    <div class="board" id="board"></div>
+<div class="card">
+    <h2>🧠 Memory</h2>
+    <p>Hitta alla par på så få försök som möjligt.</p>
+    <a class="button" href="memory.html">Spela</a>
 </div>
 
-<button class="action" onclick="restart()">Starta om</button>
-<p><a href="index.html">← Tillbaka till Blaverus</a></p>
-
+<div class="card">
+    <h2>🎯 Klickspel</h2>
+    <p>Klicka så många gånger du kan på 10 sekunder.</p>
+    <a class="button" href="clicker.html">Spela</a>
 </div>
 
-<script>
-const size = 15;
-const boardEl = document.getElementById("board");
-const statusEl = document.getElementById("status");
+<div class="card">
+    <h2>🚗 Bilspel</h2>
+    <p>Undvik hinder och samla poäng.</p>
+    <a class="button" href="car.html">Spela</a>
+</div>
 
-let board = Array(size * size).fill("");
-let currentPlayer = "blue";
-let gameActive = true;
-let winningCells = [];
+<div class="card">
+    <h2>🔵🔴 Fem i Rad</h2>
+    <p>Två spelare. Först med fem stenar i rad vinner.</p>
+    <a class="button" href="femirad.html">Spela</a>
+</div>
 
-function drawBoard(){
-    boardEl.innerHTML = "";
+<div class="card">
+    <h2>🐦 Flappy</h2>
+    <p>Testversion. Spelet är under utveckling.</p>
+    <span class="badge">TESTVERSION</span><br>
+    <a class="button" href="flappy.html">Testa</a>
+</div>
 
-    for(let i = 0; i < board.length; i++){
-        const cell = document.createElement("button");
-        cell.className = "cell";
+<div class="card">
+    <h2>🏆 Topplista</h2>
+    <p>Se dina bästa resultat från spelen.</p>
+    <a class="button" href="highscore.html">Visa rekord</a>
+</div>
 
-        if(board[i]){
-            cell.classList.add(board[i]);
+</div>
+</div>
 
-            const stone = document.createElement("div");
-            stone.className = "stone";
-            cell.appendChild(stone);
-        }
-
-        if(winningCells.includes(i)){
-            cell.classList.add("win");
-        }
-
-        cell.onclick = () => makeMove(i);
-        boardEl.appendChild(cell);
-    }
-}
-
-function makeMove(index){
-    if(!gameActive || board[index] !== "") return;
-
-    board[index] = currentPlayer;
-
-    const win = checkWin(index);
-
-    if(win){
-        winningCells = win;
-        gameActive = false;
-        statusEl.textContent = currentPlayer === "blue" ? "Blå vann!" : "Röd vann!";
-        drawBoard();
-        return;
-    }
-
-    if(board.every(cell => cell !== "")){
-        gameActive = false;
-        statusEl.textContent = "Oavgjort!";
-        drawBoard();
-        return;
-    }
-
-    currentPlayer = currentPlayer === "blue" ? "red" : "blue";
-    statusEl.textContent = currentPlayer === "blue" ? "Blås tur" : "Röds tur";
-
-    drawBoard();
-}
-
-function checkWin(index){
-    const row = Math.floor(index / size);
-    const col = index % size;
-
-    const directions = [
-        [0,1],
-        [1,0],
-        [1,1],
-        [1,-1]
-    ];
-
-    for(const [dr,dc] of directions){
-        let line = [index];
-
-        line = line
-            .concat(countDirection(row, col, dr, dc))
-            .concat(countDirection(row, col, -dr, -dc));
-
-        if(line.length >= 5){
-            return line.slice(0,5);
-        }
-    }
-
-    return null;
-}
-
-function countDirection(row, col, dr, dc){
-    const result = [];
-    let r = row + dr;
-    let c = col + dc;
-
-    while(
-        r >= 0 && r < size &&
-        c >= 0 && c < size &&
-        board[r * size + c] === currentPlayer
-    ){
-        result.push(r * size + c);
-        r += dr;
-        c += dc;
-    }
-
-    return result;
-}
-
-function restart(){
-    board = Array(size * size).fill("");
-    currentPlayer = "blue";
-    gameActive = true;
-    winningCells = [];
-    statusEl.textContent = "Blå börjar";
-    drawBoard();
-}
-
-drawBoard();
-</script>
+<footer>
+    © 2026 Blaverus
+</footer>
 
 </body>
 </html>
