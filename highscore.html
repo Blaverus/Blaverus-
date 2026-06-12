@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blaverus Highscore</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#0d1117;color:white;text-align:center}
+header{padding:40px;background:linear-gradient(135deg,#0066ff,#00aaff)}
+.box{max-width:500px;margin:30px auto;background:#161b22;padding:25px;border-radius:15px}
+.score{font-size:1.4rem;margin:15px}
+a{color:#00aaff}
+button{padding:12px 20px;border:0;border-radius:8px;background:#0066ff;color:white;cursor:pointer}
+</style>
+</head>
+<body>
+
+<header>
+<h1>🏆 Blaverus Highscore</h1>
+<p>Dina bästa resultat</p>
+</header>
+
+<div class="box">
+    <div class="score">🐍 Snake: <span id="snake">0</span></div>
+    <div class="score">🎯 Klickspel: <span id="clicker">0</span></div>
+    <div class="score">🧠 Memory rekord: <span id="memory">-</span> försök</div>
+
+    <button onclick="resetScores()">Nollställ rekord</button>
+</div>
+
+<p><a href="index.html">← Tillbaka till Blaverus</a></p>
+
+<script>
+document.getElementById("snake").textContent = localStorage.getItem("snakeHighscore") || 0;
+document.getElementById("clicker").textContent = localStorage.getItem("clickerHighscore") || 0;
+document.getElementById("memory").textContent = localStorage.getItem("memoryBest") || "-";
+
+function resetScores(){
+    if(confirm("Vill du verkligen nollställa alla rekord?")){
+        localStorage.removeItem("snakeHighscore");
+        localStorage.removeItem("clickerHighscore");
+        localStorage.removeItem("memoryBest");
+        location.reload();
+    }
+}
+</script>
+
+</body>
+</html>
