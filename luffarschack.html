@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blaverus Luffarschack</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#0d1117;color:white;text-align:center}
+header{padding:25px;background:linear-gradient(135deg,#0066ff,#00aaff)}
+.board{display:grid;grid-template-columns:repeat(3,100px);gap:10px;justify-content:center;margin:30px auto}
+.cell{width:100px;height:100px;background:#161b22;border:2px solid #00aaff;border-radius:14px;font-size:3rem;color:white;cursor:pointer}
+button{padding:12px 20px;border:0;border-radius:10px;background:#0066ff;color:white;font-size:1rem;cursor:pointer}
+a{color:#00aaff}
+</style>
+</head>
+<body>
+
+<header>
+<h1>❌⭕ Blaverus Luffarschack</h1>
+<p>Spelare X börjar</p>
+</header>
+
+<h2 id="status">X:s tur</h2>
+
+<div class="board" id="board"></div>
+
+<button onclick="restart()">Starta om</button>
+
+<p><a href="index.html">← Tillbaka till Blaverus</a></p>
+
+<script>
+const board = document.getElementById("board");
+const statusText = document.getElementById("status");
+
+let cells = ["","","","","","","","",""];
+let currentPlayer = "X";
+let gameActive = true;
+
+function drawBoard(){
+    board.innerHTML = "";
+
+    cells.forEach((value, index) => {
+        const cell = document.createElement("button");
+        cell.className = "cell";
+        cell.textContent = value;
+        cell.onclick = () => makeMove(index);
+        board.appendChild(cell);
+    });
+}
+
+function makeMove(index){
+    if(cells[index] !== "" || !gameActive) return;
+
+    cells[index] = currentPlayer;
+    drawBoard();
+
+    if(checkWinner()){
+        statusText.textContent = currentPlayer + " vann!";
+        gameActive = false;
+        return;
+    }
+
+    if(cells.every(cell => cell !== "")){
+        statusText.textContent = "Oavgjort!";
+        gameActive = false;
+        return;
+    }
+
+    currentPlayer = currentPlayer === "X" ? "O" : "X";
+    statusText.textContent = currentPlayer + ":s tur";
+}
+
+function checkWinner(){
+    const wins = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+    ];
+
+    return wins.some(combo => {
+        const [a,b,c] = combo;
+        return cells[a] && cells[a] === cells[b] && cells[a] === cells[c];
+    });
+}
+
+function restart(){
+    cells = ["","","","","","","","",""];
+    currentPlayer = "X";
+    gameActive = true;
+    statusText.textContent = "X:s tur";
+    drawBoard();
+}
+
+drawBoard();
+</script>
+
+</body>
+</html>
