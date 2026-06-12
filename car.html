@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blaverus Bilspel</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#0d1117;color:white;text-align:center}
+header{padding:25px;background:linear-gradient(135deg,#0066ff,#00aaff)}
+canvas{background:#222;border:3px solid #0066ff;margin-top:20px;max-width:95%}
+button{padding:12px 18px;margin:8px;border:0;border-radius:8px;background:#0066ff;color:white;font-size:1rem}
+a{color:#00aaff}
+</style>
+</head>
+<body>
+
+<header>
+<h1>🚗 Blaverus Bilspel</h1>
+<p>Undvik hinder och samla poäng!</p>
+</header>
+
+<p>Poäng: <span id="score">0</span></p>
+<canvas id="game" width="400" height="500"></canvas>
+
+<p>Styr med piltangenterna eller knapparna.</p>
+<button onclick="moveLeft()">⬅️ Vänster</button>
+<button onclick="moveRight()">➡️ Höger</button>
+
+<p><a href="index.html">← Tillbaka till Blaverus</a></p>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const scoreText = document.getElementById("score");
+
+let car = {x:175, y:420, w:50, h:70};
+let obstacle = {x:Math.random()*350, y:-80, w:50, h:70};
+let score = 0;
+let speed = 4;
+
+document.addEventListener("keydown", e => {
+    if(e.key === "ArrowLeft") moveLeft();
+    if(e.key === "ArrowRight") moveRight();
+});
+
+function moveLeft(){
+    car.x -= 35;
+    if(car.x < 0) car.x = 0;
+}
+
+function moveRight(){
+    car.x += 35;
+    if(car.x > 350) car.x = 350;
+}
+
+function drawCar(){
+    ctx.fillStyle = "#00aaff";
+    ctx.fillRect(car.x, car.y, car.w, car.h);
+    ctx.fillStyle = "white";
+    ctx.fillRect(car.x + 10, car.y + 10, 30, 15);
+}
+
+function drawObstacle(){
+    ctx.fillStyle = "red";
+    ctx.fillRect(obstacle.x, obstacle.y, obstacle.w, obstacle.h);
+}
+
+function collision(a,b){
+    return a.x < b.x + b.w &&
+           a.x + a.w > b.x &&
+           a.y < b.y + b.h &&
+           a.y + a.h > b.y;
+}
+
+function gameLoop(){
+    ctx.clearRect(0,0,400,500);
+
+    ctx.fillStyle = "#333";
+    ctx.fillRect(0,0,400,500);
+
+    ctx.strokeStyle = "white";
+    ctx.setLineDash([20,20]);
+    ctx.beginPath();
+    ctx.moveTo(200,0);
+    ctx.lineTo(200,500);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    drawCar();
+    drawObstacle();
+
+    obstacle.y += speed;
+
+    if(obstacle.y > 500){
+        obstacle.y = -80;
+        obstacle.x = Math.random()*350;
+        score++;
+        scoreText.textContent = score;
+
+        if(score % 5 === 0){
+            speed += 0.8;
+        }
+    }
+
+    if(collision(car, obstacle)){
+        alert("Game Over! Poäng: " + score);
+        location.reload();
+    }
+
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+
+</body>
+</html>
