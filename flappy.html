@@ -7,8 +7,8 @@
 <style>
 body{margin:0;font-family:Arial,sans-serif;background:#0d1117;color:white;text-align:center}
 header{padding:25px;background:linear-gradient(135deg,#0066ff,#00aaff)}
-canvas{background:#87ceeb;border:3px solid #0066ff;margin-top:20px;max-width:95%}
-button{padding:14px 22px;margin:10px;border:0;border-radius:8px;background:#0066ff;color:white;font-size:1rem;cursor:pointer}
+canvas{background:#7dd3fc;border:3px solid #0066ff;margin-top:15px;max-width:95%;touch-action:none}
+button{padding:14px 24px;margin:10px;border:0;border-radius:10px;background:#0066ff;color:white;font-size:1rem;cursor:pointer}
 a{color:#00aaff}
 </style>
 </head>
@@ -16,14 +16,15 @@ a{color:#00aaff}
 
 <header>
 <h1>🐦 Blaverus Flappy</h1>
-<p>Klicka, tryck mellanslag eller använd knappen för att flyga!</p>
+<p>Tryck på skärmen, mellanslag eller FLYG-knappen</p>
 </header>
 
-<p>Poäng: <span id="score">0</span></p>
-<p>Highscore: <span id="highscore">0</span></p>
+<p>Poäng: <span id="score">0</span> | Highscore: <span id="highscore">0</span></p>
 
 <canvas id="game" width="400" height="500"></canvas><br>
-<button onclick="jump()">FLYG!</button>
+
+<button id="startBtn">Starta</button>
+<button id="flyBtn">FLYG!</button>
 
 <p><a href="index.html">← Tillbaka till Blaverus</a></p>
 
@@ -31,123 +32,205 @@ a{color:#00aaff}
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-let bird = {x:80, y:220, size:24, velocity:0};
-let gravity = 0.45;
-let jumpPower = -8;
-let pipes = [];
-let score = 0;
-let highscore = localStorage.getItem("flappyHighscore") || 0;
-let gameOver = false;
+const scoreText = document.getElementById("score");
+const highscoreText = document.getElementById("highscore");
+const startBtn = document.getElementById("startBtn");
+const flyBtn = document.getElementById("flyBtn");
 
-document.getElementById("highscore").textContent = highscore;
+let bird, pipes, score, highscore, running, gameOver, frame;
 
-function jump(){
-    if(gameOver){
-        location.reload();
-    }
-    bird.velocity = jumpPower;
+highscore = Number(localStorage.getItem("flappyHighscore")) || 0;
+highscoreText.textContent = highscore;
+
+function resetGame(){
+    bird = {
+        x:80,
+        y:250,
+        r:16,
+        velocity:0
+    };
+
+    pipes = [];
+    score = 0;
+    running = false;
+    gameOver = false;
+    frame = 0;
+    scoreText.textContent = score;
+    drawStartScreen();
 }
+
+function startGame(){
+    if(gameOver){
+        resetGame();
+    }
+
+    running = true;
+    gameOver = false;
+}
+
+function fly(){
+    if(!running){
+        startGame();
+    }
+
+    bird.velocity = -7.2;
+}
+
+startBtn.onclick = startGame;
+flyBtn.onclick = fly;
 
 document.addEventListener("keydown", e => {
     if(e.code === "Space"){
-        jump();
+        e.preventDefault();
+        fly();
     }
 });
 
-canvas.addEventListener("click", jump);
+canvas.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    fly();
+});
 
 function createPipe(){
-    const gap = 140;
-    const topHeight = Math.floor(Math.random() * 220) + 40;
+    const gap = 165;
+    const minTop = 50;
+    const maxTop = 280;
+    const top = Math.floor(Math.random() * (maxTop - minTop)) + minTop;
 
     pipes.push({
         x:400,
-        top:topHeight,
-        bottom:topHeight + gap,
-        width:60,
+        w:65,
+        top:top,
+        bottom:top + gap,
         passed:false
     });
 }
 
+function drawBackground(){
+    ctx.fillStyle = "#7dd3fc";
+    ctx.fillRect(0,0,400,500);
+
+    ctx.fillStyle = "#22c55e";
+    ctx.fillRect(0,460,400,40);
+}
+
 function drawBird(){
-    ctx.fillStyle = "#ffcc00";
+    ctx.fillStyle = "#facc15";
     ctx.beginPath();
-    ctx.arc(bird.x, bird.y, bird.size, 0, Math.PI * 2);
+    ctx.arc(bird.x,bird.y,bird.r,0,Math.PI*2);
     ctx.fill();
 
-    ctx.fillStyle = "black";
+    ctx.fillStyle = "#111";
     ctx.beginPath();
-    ctx.arc(bird.x + 8, bird.y - 8, 4, 0, Math.PI * 2);
+    ctx.arc(bird.x+6,bird.y-5,3,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle = "#fb923c";
+    ctx.beginPath();
+    ctx.moveTo(bird.x+14,bird.y);
+    ctx.lineTo(bird.x+28,bird.y-6);
+    ctx.lineTo(bird.x+28,bird.y+6);
+    ctx.closePath();
     ctx.fill();
 }
 
 function drawPipes(){
-    ctx.fillStyle = "#00aa55";
-
+    ctx.fillStyle = "#16a34a";
     pipes.forEach(pipe => {
-        ctx.fillRect(pipe.x, 0, pipe.width, pipe.top);
-        ctx.fillRect(pipe.x, pipe.bottom, pipe.width, 500 - pipe.bottom);
+        ctx.fillRect(pipe.x,0,pipe.w,pipe.top);
+        ctx.fillRect(pipe.x,pipe.bottom,pipe.w,460-pipe.bottom);
     });
 }
 
+function circleRectCollision(circle, rect){
+    const closestX = Math.max(rect.x, Math.min(circle.x, rect.x + rect.w));
+    const closestY = Math.max(rect.y, Math.min(circle.y, rect.y + rect.h));
+
+    const dx = circle.x - closestX;
+    const dy = circle.y - closestY;
+
+    return (dx * dx + dy * dy) < (circle.r * circle.r);
+}
+
 function endGame(){
+    running = false;
     gameOver = true;
 
     if(score > highscore){
         highscore = score;
         localStorage.setItem("flappyHighscore", highscore);
+        highscoreText.textContent = highscore;
     }
 
-    alert("Game Over! Poäng: " + score);
-    location.reload();
+    setTimeout(() => {
+        alert("Game Over! Poäng: " + score);
+        resetGame();
+    }, 100);
 }
 
-function loop(){
-    ctx.clearRect(0,0,400,500);
+function update(){
+    if(running){
+        frame++;
 
-    ctx.fillStyle = "#87ceeb";
-    ctx.fillRect(0,0,400,500);
+        bird.velocity += 0.38;
+        bird.y += bird.velocity;
 
-    bird.velocity += gravity;
-    bird.y += bird.velocity;
+        if(frame % 105 === 0){
+            createPipe();
+        }
 
-    if(bird.y + bird.size > 500 || bird.y - bird.size < 0){
-        endGame();
-        return;
-    }
+        pipes.forEach(pipe => {
+            pipe.x -= 2.4;
 
-    if(pipes.length === 0 || pipes[pipes.length - 1].x < 220){
-        createPipe();
-    }
+            if(!pipe.passed && pipe.x + pipe.w < bird.x){
+                pipe.passed = true;
+                score++;
+                scoreText.textContent = score;
+            }
 
-    pipes.forEach(pipe => {
-        pipe.x -= 3;
+            const topRect = {x:pipe.x,y:0,w:pipe.w,h:pipe.top};
+            const bottomRect = {x:pipe.x,y:pipe.bottom,w:pipe.w,h:460-pipe.bottom};
 
-        if(
-            bird.x + bird.size > pipe.x &&
-            bird.x - bird.size < pipe.x + pipe.width &&
-            (bird.y - bird.size < pipe.top || bird.y + bird.size > pipe.bottom)
-        ){
+            if(circleRectCollision(bird, topRect) || circleRectCollision(bird, bottomRect)){
+                endGame();
+            }
+        });
+
+        pipes = pipes.filter(pipe => pipe.x + pipe.w > 0);
+
+        if(bird.y - bird.r < 0 || bird.y + bird.r > 460){
             endGame();
-            return;
         }
+    }
 
-        if(!pipe.passed && pipe.x + pipe.width < bird.x){
-            pipe.passed = true;
-            score++;
-            document.getElementById("score").textContent = score;
-        }
-    });
+    draw();
+    requestAnimationFrame(update);
+}
 
-    pipes = pipes.filter(pipe => pipe.x + pipe.width > 0);
-
+function draw(){
+    drawBackground();
     drawPipes();
     drawBird();
 
-    requestAnimationFrame(loop);
+    if(!running && !gameOver){
+        ctx.fillStyle = "rgba(0,0,0,0.45)";
+        ctx.fillRect(40,170,320,110);
+
+        ctx.fillStyle = "white";
+        ctx.font = "22px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("Tryck Starta eller FLYG",200,215);
+        ctx.font = "16px Arial";
+        ctx.fillText("Undvik rören och samla poäng",200,245);
+    }
 }
 
-loop();
+function drawStartScreen(){
+    draw();
+}
+
+resetGame();
+update();
 </script>
 
 </body>
