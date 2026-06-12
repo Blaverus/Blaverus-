@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blaverus Chat</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#0d1117;color:white}
+header{text-align:center;padding:30px;background:linear-gradient(135deg,#0066ff,#00aaff)}
+.chat-box{max-width:700px;margin:20px auto;background:#161b22;padding:20px;border-radius:15px}
+#messages{height:350px;overflow-y:auto;background:#0d1117;padding:15px;border-radius:10px;margin-bottom:15px}
+.message{margin-bottom:12px;padding:10px;background:#21262d;border-radius:10px}
+.name{font-weight:bold;color:#00aaff}
+input,button{padding:12px;border:0;border-radius:8px;margin:5px}
+input{width:70%}
+button{background:#0066ff;color:white;cursor:pointer}
+a{color:#00aaff}
+</style>
+</head>
+<body>
+
+<header>
+<h1>💬 Blaverus Chat</h1>
+<p>Välj ett användarnamn och chatta live</p>
+</header>
+
+<div class="chat-box">
+    <div>
+        <input id="username" placeholder="Ditt användarnamn">
+        <button onclick="saveName()">Spara namn</button>
+    </div>
+
+    <div id="messages"></div>
+
+    <input id="messageInput" placeholder="Skriv ett meddelande...">
+    <button onclick="sendMessage()">Skicka</button>
+</div>
+
+<p style="text-align:center;"><a href="index.html">← Tillbaka till Blaverus</a></p>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyC1uvn6xJbZJtcNWpdu5Y34dEjs4MFuACE",
+  authDomain: "blaverus-8cced.firebaseapp.com",
+  databaseURL: "https://blaverus-8cced-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "blaverus-8cced",
+  storageBucket: "blaverus-8cced.firebasestorage.app",
+  messagingSenderId: "73180974267",
+  appId: "1:73180974267:web:5ccb668ac42f117ea5ad9e",
+  measurementId: "G-3LQ55E5Q2S"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const messagesRef = ref(db, "messages");
+
+const usernameInput = document.getElementById("username");
+const messageInput = document.getElementById("messageInput");
+const messagesDiv = document.getElementById("messages");
+
+usernameInput.value = localStorage.getItem("blaverusName") || "";
+
+function saveName(){
+    localStorage.setItem("blaverusName", usernameInput.value.trim());
+    alert("Namn sparat!");
+}
+
+window.saveName = saveName;
+
+function sendMessage(){
+    const name = usernameInput.value.trim();
+    const text = messageInput.value.trim();
+
+    if(!name){
+        alert("Skriv ett användarnamn först.");
+        return;
+    }
+
+    if(!text){
+        return;
+    }
+
+    push(messagesRef, {
+        name: name,
+        text: text,
+        time: serverTimestamp()
+    });
+
+    messageInput.value = "";
+}
+
+window.sendMessage = sendMessage;
+
+messageInput.addEventListener("keydown", e => {
+    if(e.key === "Enter"){
+        sendMessage();
+    }
+});
+
+onChildAdded(messagesRef, snapshot => {
+    const msg = snapshot.val();
+
+    const div = document.createElement("div");
+    div.className = "message";
+    div.innerHTML = `<span class="name">${escapeHtml(msg.name)}:</span> ${escapeHtml(msg.text)}`;
+
+    messagesDiv.appendChild(div);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+});
+
+function escapeHtml(text){
+    return String(text)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+}
+</script>
+
+</body>
+</html>
