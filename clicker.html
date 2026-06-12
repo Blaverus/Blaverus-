@@ -21,7 +21,7 @@ a{color:#00aaff}
 
 <h2>Tid: <span id="time">10</span></h2>
 <h2>Poäng: <span id="score">0</span></h2>
-
+<h2>Highscore: <span id="highscore">0</span></h2>
 <button id="startBtn">Starta spelet</button><br>
 <button id="clickBtn" disabled>KLICKA!</button>
 
@@ -29,11 +29,14 @@ a{color:#00aaff}
 
 <script>
 let score = 0;
+let highscore = localStorage.getItem("clickerHighscore") || 0;
 let time = 10;
 let running = false;
 let timer;
 
-const scoreText = document.getElementById("score");
+const scoreText = document.getElementById("score"); 
+const highscoreText = document.getElementById("highscore");
+highscoreText.textContent = highscore;
 const timeText = document.getElementById("time");
 const startBtn = document.getElementById("startBtn");
 const clickBtn = document.getElementById("clickBtn");
@@ -56,7 +59,13 @@ startBtn.onclick = () => {
             running = false;
             clickBtn.disabled = true;
             startBtn.disabled = false;
-            alert("Tiden är slut! Din poäng: " + score);
+            if(score > highscore){
+    highscore = score;
+    localStorage.setItem("clickerHighscore", highscore);
+    highscoreText.textContent = highscore;
+}
+
+alert("Tiden är slut! Din poäng: " + score);
         }
     }, 1000);
 };
