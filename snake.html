@@ -28,6 +28,7 @@ a{
 
 <h1>🐍 Blaverus Snake</h1>
 <p>Poäng: <span id="score">0</span></p>
+<p>Highscore: <span id="highscore">0</span></p>
 
 <canvas id="game" width="400" height="400"></canvas>
 
@@ -49,7 +50,10 @@ let food = {
 };
 
 let score = 0;
+let highscore = localStorage.getItem("snakeHighscore") || 0;
 let direction = "RIGHT";
+
+document.getElementById("highscore").textContent = highscore;
 
 document.addEventListener("keydown", e => {
     if(e.key==="ArrowUp" && direction!=="DOWN") direction="UP";
@@ -91,16 +95,26 @@ function draw(){
     }
 
     if(headX<0 || headY<0 || headX>=400 || headY>=400){
-        alert("Game Over! Poäng: " + score);
-        location.reload();
+      if(score > highscore){
+    highscore = score;
+    localStorage.setItem("snakeHighscore", highscore);
+}
+
+alert("Game Over! Poäng: " + score);
+location.reload();
     }
 
     let newHead={x:headX,y:headY};
 
     for(let i=0;i<snake.length;i++){
         if(snake[i].x===newHead.x && snake[i].y===newHead.y){
-            alert("Game Over! Poäng: " + score);
-            location.reload();
+           if(score > highscore){
+    highscore = score;
+    localStorage.setItem("snakeHighscore", highscore);
+}
+
+alert("Game Over! Poäng: " + score);
+location.reload();
         }
     }
 
