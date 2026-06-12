@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blaverus Klickspel</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#0d1117;color:white;text-align:center}
+header{padding:30px;background:linear-gradient(135deg,#0066ff,#00aaff)}
+button{padding:18px 30px;margin:15px;border:0;border-radius:12px;background:#0066ff;color:white;font-size:1.2rem;cursor:pointer}
+#clickBtn{font-size:2rem;padding:40px 60px;background:#00aaff}
+a{color:#00aaff}
+</style>
+</head>
+<body>
+
+<header>
+<h1>🎯 Blaverus Klickspel</h1>
+<p>Klicka så många gånger du kan på 10 sekunder!</p>
+</header>
+
+<h2>Tid: <span id="time">10</span></h2>
+<h2>Poäng: <span id="score">0</span></h2>
+
+<button id="startBtn">Starta spelet</button><br>
+<button id="clickBtn" disabled>KLICKA!</button>
+
+<p><a href="index.html">← Tillbaka till Blaverus</a></p>
+
+<script>
+let score = 0;
+let time = 10;
+let running = false;
+let timer;
+
+const scoreText = document.getElementById("score");
+const timeText = document.getElementById("time");
+const startBtn = document.getElementById("startBtn");
+const clickBtn = document.getElementById("clickBtn");
+
+startBtn.onclick = () => {
+    score = 0;
+    time = 10;
+    running = true;
+    scoreText.textContent = score;
+    timeText.textContent = time;
+    clickBtn.disabled = false;
+    startBtn.disabled = true;
+
+    timer = setInterval(() => {
+        time--;
+        timeText.textContent = time;
+
+        if(time <= 0){
+            clearInterval(timer);
+            running = false;
+            clickBtn.disabled = true;
+            startBtn.disabled = false;
+            alert("Tiden är slut! Din poäng: " + score);
+        }
+    }, 1000);
+};
+
+clickBtn.onclick = () => {
+    if(running){
+        score++;
+        scoreText.textContent = score;
+    }
+};
+</script>
+
+</body>
+</html>
