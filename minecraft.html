@@ -175,8 +175,23 @@ function updateHotbar(){
     document.getElementById("monsterText").textContent=monsters.filter(m=>!m.dead).length;
 }
 
-function moveLeft(){keys["a"]=true}
-function moveRight(){keys["d"]=true}
+function moveLeft(){
+    keys["a"] = true;
+    keys["d"] = false;
+
+    setTimeout(() => {
+        keys["a"] = false;
+    }, 180);
+}
+
+function moveRight(){
+    keys["d"] = true;
+    keys["a"] = false;
+
+    setTimeout(() => {
+        keys["d"] = false;
+    }, 180);
+}
 function jump(){
     if(player.onGround){
         player.vy=-10;
