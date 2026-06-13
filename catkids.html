@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blaverus Cat Kids</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(#ffe4f3,#dbeafe);color:#4a044e;text-align:center}
+header{padding:24px;background:linear-gradient(135deg,#fb7185,#f472b6,#60a5fa);color:white}
+.box{max-width:950px;margin:18px auto;background:white;border-radius:24px;padding:18px;box-shadow:0 10px 25px #0002}
+button{padding:14px 20px;margin:7px;border:0;border-radius:999px;background:#ec4899;color:white;font-size:1rem;cursor:pointer}
+canvas{background:#bfdbfe;border:5px solid #f9a8d4;border-radius:22px;max-width:96%;touch-action:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.card{background:#ffe4f3;border-radius:18px;padding:14px}
+a{color:#7c3aed;font-weight:bold}
+</style>
+</head>
+<body>
+
+<header>
+<h1>🐱 Blaverus Cat Kids</h1>
+<p>10 kattspel med nivåer och rekord</p>
+</header>
+
+<div class="box">
+<h2>Välj minispel</h2>
+<div class="grid" id="menu"></div>
+</div>
+
+<div class="box">
+<h2 id="title">🐾 Välj ett spel</h2>
+<p id="info">Klicka på ett minispel ovan.</p>
+<p>Nivå: <span id="level">1</span> | Poäng: <span id="score">0</span> | Highscore: <span id="high">0</span></p>
+<canvas id="game" width="760" height="430"></canvas><br>
+<button onclick="moveLeft()">⬅️</button>
+<button onclick="jump()">⬆️ Hoppa</button>
+<button onclick="moveRight()">➡️</button>
+<button onclick="startGame(currentGame)">Starta om</button>
+</div>
+
+<p><a href="index.html">← Tillbaka till Blaverus</a></p>
+
+<script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+
+const games=[
+ {id:"fish",name:"🐟 Fånga fisken",goal:"Samla alla fiskar"},
+ {id:"milk",name:"🥛 Mjölkjakten",goal:"Samla mjölkglas"},
+ {id:"yarn",name:"🧶 Garnbollar",goal:"Samla garnbollar"},
+ {id:"mouse",name:"🐭 Fånga möss",goal:"Fånga mössen"},
+ {id:"stars",name:"⭐ Kattstjärnor",goal:"Samla stjärnor"},
+ {id:"hearts",name:"💖 Hjärtan",goal:"Samla hjärtan"},
+ {id:"butterfly",name:"🦋 Fjärilar",goal:"Fånga fjärilar"},
+ {id:"cookies",name:"🍪 Kattkakor",goal:"Samla kakor"},
+ {id:"rainbow",name:"🌈 Regnbågskatt",goal:"Samla regnbågar"},
+ {id:"crown",name:"👑 Kattkrona",goal:"Hitta kronorna"}
+];
+
+let currentGame=null, level=1, score=0, high=0, player, items=[], keys={}, changing=false;
+
+const emojiMap={
+ fish:"🐟",milk:"🥛",yarn:"🧶",mouse:"🐭",stars:"⭐",
+ hearts:"💖",butterfly:"🦋",cookies:"🍪",rainbow:"🌈",crown:"👑"
+};
+
+const bgMap=[
+ ["#bfdbfe","#86efac"],["#ffd6f3","#f9a8d4"],["#c4b5fd","#a7f3d0"],
+ ["#fde68a","#86efac"],["#bae6fd","#ddd6fe"]
+];
+
+const menu=document.getElementById("menu");
+games.forEach(g=>{
+ const div=document.createElement("div");
+ div.className="card";
+ div.innerHTML=`<h3>${g.name}</h3><p>${g.goal}</p><button onclick="startGame('${g.id}')">Spela</button>`;
+ menu.appendChild(div);
+});
+
+function startGame(id){
+ currentGame=id;
+ level=1;
+ score=0;
+ high=Number(localStorage.getItem("cat_"+id))||0;
+ player={x:60,y:315,w:65,h:60,vx:0,vy:0,onGround:true};
+ changing=false;
+ makeLevel();
+ updateText();
+}
+
+function makeLevel(){
+ items=[];
+ changing=false;
+ const count=4+level;
+ for(let i=0;i<count;i++){
+   items.push({
+     x:90+Math.random()*580,
+     y:160+Math.random()*140,
+     taken:false
+   });
+ }
+}
+
+function updateText(){
+ const g=games.find(x=>x.id===currentGame);
+ document.getElementById("title").textContent=g?g.name:"🐾 Välj ett spel";
+ document.getElementById("info").textContent=g?g.goal:"Klicka på ett minispel ovan.";
+ document.getElementById("level").textContent=level;
+ document.getElementById("score").textContent=score;
+ document.getElementById("high").textContent=high;
+}
+
+function moveLeft(){player.vx=-3.4;setTimeout(()=>player.vx=0,250)}
+function moveRight(){player.vx=3.4;setTimeout(()=>player.vx=0,250)}
+function jump(){
+ if(player.onGround){
+   player.vy=-11;
+   player.onGround=false;
+ }
+}
+
+document.addEventListener("keydown",e=>{
+ if(!currentGame)return;
+ if(e.key==="ArrowLeft")player.vx=-3.4;
+ if(e.key==="ArrowRight")player.vx=3.4;
+ if(e.code==="Space"||e.key==="ArrowUp"){e.preventDefault();jump()}
+});
+document.addEventListener("keyup",e=>{
+ if(e.key==="ArrowLeft"||e.key==="ArrowRight")player.vx=0;
+});
+
+function nextLevel(){
+ if(level>=5){
+   if(score>high){
+     high=score;
+     localStorage.setItem("cat_"+currentGame,high);
+   }
+   updateText();
+   alert("Du klarade alla nivåer! 🐱 Poäng: "+score);
+   startGame(currentGame);
+   return;
+ }
+ level++;
+ makeLevel();
+ updateText();
+}
+
+function drawCat(x,y){
+ ctx.font="60px Arial";
+ ctx.fillText("🐱",x,y+55);
+}
+
+function loop(){
+ ctx.clearRect(0,0,760,430);
+
+ const theme=bgMap[(level-1)%bgMap.length];
+ ctx.fillStyle=theme[0];
+ ctx.fillRect(0,0,760,430);
+
+ ctx.font="42px Arial";
+ ctx.fillText("☁️",120,80);
+ ctx.fillText("☁️",360,55);
+ ctx.fillText("🌸",610,90);
+
+ ctx.fillStyle=theme[1];
+ ctx.fillRect(0,365,760,65);
+
+ if(currentGame){
+   player.vy+=0.42;
+   player.x+=player.vx;
+   player.y+=player.vy;
+
+   if(player.x<0)player.x=0;
+   if(player.x+player.w>760)player.x=760-player.w;
+
+   if(player.y>315){
+     player.y=315;
+     player.vy=0;
+     player.onGround=true;
+   }
+
+   ctx.font="42px Arial";
+   items.forEach(it=>{
+     if(it.taken)return;
+     ctx.fillText(emojiMap[currentGame],it.x,it.y);
+
+     const px=player.x+32;
+     const py=player.y+35;
+     const dx=px-it.x;
+     const dy=py-it.y;
+
+     if(Math.sqrt(dx*dx+dy*dy)<62){
+       it.taken=true;
+       score++;
+       if(score>high){
+         high=score;
+         localStorage.setItem("cat_"+currentGame,high);
+       }
+       updateText();
+     }
+   });
+
+   drawCat(player.x,player.y);
+
+   if(items.length>0 && items.every(i=>i.taken) && !changing){
+     changing=true;
+     ctx.fillStyle="#7c3aed";
+     ctx.font="34px Arial";
+     ctx.fillText("Nivå klar! 🐾",285,210);
+     setTimeout(nextLevel,850);
+   }
+ }else{
+   ctx.fillStyle="#7c3aed";
+   ctx.font="34px Arial";
+   ctx.fillText("Välj ett kattspel ovan 🐱",220,210);
+ }
+
+ requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html>
