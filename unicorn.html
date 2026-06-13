@@ -8,16 +8,16 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(180deg,#ffd6f3,#dbeafe);color:#4a044e;text-align:center}
 header{padding:24px;background:linear-gradient(135deg,#ff7ad9,#a78bfa,#60a5fa);color:white}
-.box{max-width:900px;margin:18px auto;background:white;border-radius:24px;padding:18px;box-shadow:0 10px 25px #0002}
+.box{max-width:930px;margin:18px auto;background:white;border-radius:24px;padding:18px;box-shadow:0 10px 25px #0002}
 button{padding:15px 22px;margin:8px;border:0;border-radius:999px;background:#ff4fc3;color:white;font-size:1.1rem;cursor:pointer}
 canvas{background:#bde9ff;border:5px solid #ff8de3;border-radius:22px;max-width:96%;touch-action:none}
 .hidden{display:none}
-.cardgrid{display:grid;grid-template-columns:repeat(4,110px);gap:14px;justify-content:center}
-.card{width:110px;height:110px;font-size:3.2rem;background:#ffe4f7;border:4px solid #ff8de3;border-radius:22px}
+.cardgrid{display:grid;grid-template-columns:repeat(5,100px);gap:14px;justify-content:center}
+.card{width:100px;height:100px;font-size:3rem;background:#ffe4f7;border:4px solid #ff8de3;border-radius:22px}
 a{color:#7c3aed;font-weight:bold}
-@media(max-width:520px){
-    .cardgrid{grid-template-columns:repeat(3,95px)}
-    .card{width:95px;height:95px;font-size:2.7rem}
+@media(max-width:620px){
+    .cardgrid{grid-template-columns:repeat(4,82px)}
+    .card{width:82px;height:82px;font-size:2.4rem}
 }
 </style>
 </head>
@@ -25,7 +25,7 @@ a{color:#7c3aed;font-weight:bold}
 
 <header>
 <h1>🦄 Blaverus Unicorn Kids</h1>
-<p>Stora bilder, lugna spel och mycket rosa</p>
+<p>Stjärnor, memory, regnbågar och rekord</p>
 </header>
 
 <div class="box">
@@ -37,8 +37,7 @@ a{color:#7c3aed;font-weight:bold}
 
 <div id="stars" class="box game">
 <h2>⭐ Samla stjärnor</h2>
-<p>Gå runt och samla alla stora stjärnor.</p>
-<p>Poäng: <span id="starScore">0</span> / <span id="starTotal">0</span></p>
+<p>Nivå: <span id="starLevel">1</span> | Poäng: <span id="starScore">0</span> | Highscore: <span id="starHigh">0</span></p>
 <canvas id="starCanvas" width="720" height="420"></canvas><br>
 <button onclick="starLeft()">⬅️ Vänster</button>
 <button onclick="starJump()">⬆️ Hoppa</button>
@@ -48,16 +47,14 @@ a{color:#7c3aed;font-weight:bold}
 
 <div id="memory" class="box game hidden">
 <h2>🌈 Färg-memory</h2>
-<p>Stora kort. Hitta alla par!</p>
-<p>Försök: <span id="moves">0</span></p>
+<p>Försök: <span id="moves">0</span> | Bästa rekord: <span id="memoryHigh">-</span></p>
 <div class="cardgrid" id="memoryGrid"></div>
 <button onclick="startMemory()">Starta om</button>
 </div>
 
 <div id="rainbow" class="box game hidden">
 <h2>🎀 Fånga regnbågar</h2>
-<p>Klicka på de stora regnbågarna. De stannar länge.</p>
-<p>Poäng: <span id="rainbowScore">0</span></p>
+<p>Tid: <span id="rainbowTime">60</span> | Poäng: <span id="rainbowScore">0</span> | Highscore: <span id="rainbowHigh">0</span></p>
 <canvas id="rainbowCanvas" width="720" height="420"></canvas><br>
 <button onclick="startRainbow()">Starta om</button>
 </div>
@@ -70,23 +67,55 @@ function showGame(id){
     document.getElementById(id).classList.remove("hidden");
 }
 
-/* SAMLA STJÄRNOR */
+/* STJÄRNSPEL MED NIVÅER */
 const starCanvas=document.getElementById("starCanvas");
 const sctx=starCanvas.getContext("2d");
-let unicorn,stars,starScore;
+
+let unicorn, stars, starScore, starLevel;
+let starHigh=Number(localStorage.getItem("unicornStarHigh"))||0;
+document.getElementById("starHigh").textContent=starHigh;
 
 function restartStars(){
     unicorn={x:70,y:315,w:70,h:60,vx:0,vy:0,onGround:true};
     starScore=0;
-    stars=[
-        {x:130,y:285,r:24,taken:false},
-        {x:250,y:245,r:24,taken:false},
-        {x:370,y:290,r:24,taken:false},
-        {x:500,y:230,r:24,taken:false},
-        {x:620,y:285,r:24,taken:false}
-    ];
+    starLevel=1;
+    createStarLevel();
+    updateStarText();
+}
+
+function createStarLevel(){
+    stars=[];
+    const count=4+starLevel;
+    for(let i=0;i<count;i++){
+        stars.push({
+            x:90+Math.random()*540,
+            y:180+Math.random()*120,
+            r:24,
+            taken:false
+        });
+    }
+}
+
+function updateStarText(){
     document.getElementById("starScore").textContent=starScore;
-    document.getElementById("starTotal").textContent=stars.length;
+    document.getElementById("starLevel").textContent=starLevel;
+    document.getElementById("starHigh").textContent=starHigh;
+}
+
+function nextStarLevel(){
+    starLevel++;
+    if(starLevel>5){
+        if(starScore>starHigh){
+            starHigh=starScore;
+            localStorage.setItem("unicornStarHigh",starHigh);
+        }
+        updateStarText();
+        alert("Du klarade alla nivåer! 🦄⭐ Poäng: "+starScore);
+        restartStars();
+        return;
+    }
+    createStarLevel();
+    updateStarText();
 }
 
 function starLeft(){unicorn.vx=-3.2;setTimeout(()=>unicorn.vx=0,260)}
@@ -106,11 +135,6 @@ document.addEventListener("keydown",e=>{
 document.addEventListener("keyup",e=>{
     if(e.key==="ArrowLeft"||e.key==="ArrowRight")unicorn.vx=0;
 });
-
-function drawUnicorn(ctx,x,y){
-    ctx.font="62px Arial";
-    ctx.fillText("🦄",x,y+55);
-}
 
 function drawStar(ctx,x,y,r){
     ctx.fillStyle="#facc15";
@@ -159,27 +183,35 @@ function starLoop(){
         const dx=ux-st.x;
         const dy=uy-st.y;
 
-        if(Math.sqrt(dx*dx+dy*dy)<60){
+        if(Math.sqrt(dx*dx+dy*dy)<65){
             st.taken=true;
             starScore++;
-            document.getElementById("starScore").textContent=starScore;
+            if(starScore>starHigh){
+                starHigh=starScore;
+                localStorage.setItem("unicornStarHigh",starHigh);
+            }
+            updateStarText();
         }
     });
 
-    drawUnicorn(sctx,unicorn.x,unicorn.y);
+    sctx.font="62px Arial";
+    sctx.fillText("🦄",unicorn.x,unicorn.y+55);
 
     if(stars.every(s=>s.taken)){
         sctx.fillStyle="#7c3aed";
-        sctx.font="36px Arial";
-        sctx.fillText("Bra jobbat! 🦄🌟",230,200);
+        sctx.font="34px Arial";
+        sctx.fillText("Nivå klar! 🌟",265,200);
+        setTimeout(nextStarLevel,500);
     }
 
     requestAnimationFrame(starLoop);
 }
 
-/* MEMORY */
-const emojis=["🦄","🌈","⭐","💖","🎀","🍭"];
+/* MEMORY MED FLER KORT */
+const emojis=["🦄","🌈","⭐","💖","🎀","🍭","☁️","🌸","🧁","💎"];
 let memoryCards,first,second,locked,moves,found;
+let memoryHigh=localStorage.getItem("unicornMemoryHigh");
+document.getElementById("memoryHigh").textContent=memoryHigh||"-";
 
 function startMemory(){
     memoryCards=[...emojis,...emojis].sort(()=>Math.random()-0.5);
@@ -209,7 +241,15 @@ function startMemory(){
                 if(first.dataset.symbol===second.dataset.symbol){
                     found+=2;
                     first=null;second=null;
-                    if(found===memoryCards.length)setTimeout(()=>alert("Du vann! 🌈"),300);
+
+                    if(found===memoryCards.length){
+                        if(!memoryHigh || moves<Number(memoryHigh)){
+                            memoryHigh=moves;
+                            localStorage.setItem("unicornMemoryHigh",memoryHigh);
+                            document.getElementById("memoryHigh").textContent=memoryHigh;
+                        }
+                        setTimeout(()=>alert("Du vann! 🌈 Försök: "+moves),300);
+                    }
                 }else{
                     locked=true;
                     setTimeout(()=>{
@@ -225,19 +265,27 @@ function startMemory(){
     });
 }
 
-/* REGNBÅGAR */
+/* REGNBÅGAR MED 1 MINUT OCH HIGHSCORE */
 const rainbowCanvas=document.getElementById("rainbowCanvas");
 const rctx=rainbowCanvas.getContext("2d");
-let rainbows=[],rainbowScore=0,rainbowTimer=0;
+
+let rainbows=[],rainbowScore=0,rainbowTimer=0,rainbowTime=60,rainbowRunning=true;
+let rainbowHigh=Number(localStorage.getItem("unicornRainbowHigh"))||0;
+document.getElementById("rainbowHigh").textContent=rainbowHigh;
 
 function startRainbow(){
     rainbows=[];
     rainbowScore=0;
     rainbowTimer=0;
+    rainbowTime=60;
+    rainbowRunning=true;
     document.getElementById("rainbowScore").textContent=rainbowScore;
+    document.getElementById("rainbowTime").textContent=rainbowTime;
 }
 
 rainbowCanvas.addEventListener("click",e=>{
+    if(!rainbowRunning)return;
+
     const rect=rainbowCanvas.getBoundingClientRect();
     const x=(e.clientX-rect.left)*rainbowCanvas.width/rect.width;
     const y=(e.clientY-rect.top)*rainbowCanvas.height/rect.height;
@@ -245,10 +293,16 @@ rainbowCanvas.addEventListener("click",e=>{
     rainbows.forEach(rb=>{
         const dx=x-rb.x;
         const dy=y-rb.y;
-        if(!rb.hit && Math.sqrt(dx*dx+dy*dy)<75){
+        if(!rb.hit && Math.sqrt(dx*dx+dy*dy)<80){
             rb.hit=true;
             rainbowScore++;
             document.getElementById("rainbowScore").textContent=rainbowScore;
+
+            if(rainbowScore>rainbowHigh){
+                rainbowHigh=rainbowScore;
+                localStorage.setItem("unicornRainbowHigh",rainbowHigh);
+                document.getElementById("rainbowHigh").textContent=rainbowHigh;
+            }
         }
     });
 });
@@ -274,24 +328,41 @@ function rainbowLoop(){
     rctx.fillText("☁️",520,95);
     rctx.fillText("☁️",250,75);
 
-    rainbowTimer++;
+    if(rainbowRunning){
+        rainbowTimer++;
 
-    if(rainbowTimer>150){
-        rainbowTimer=0;
-        rainbows.push({
-            x:120+Math.random()*480,
-            y:150+Math.random()*150,
-            life:420,
-            hit:false
-        });
+        if(rainbowTimer%60===0){
+            rainbowTime--;
+            document.getElementById("rainbowTime").textContent=rainbowTime;
+
+            if(rainbowTime<=0){
+                rainbowRunning=false;
+                alert("Tiden är slut! Poäng: "+rainbowScore);
+            }
+        }
+
+        if(rainbowTimer%95===0){
+            rainbows.push({
+                x:120+Math.random()*480,
+                y:150+Math.random()*150,
+                life:360,
+                hit:false
+            });
+        }
+
+        rainbows.forEach(rb=>rb.life--);
+        rainbows=rainbows.filter(rb=>rb.life>0&&!rb.hit);
     }
 
     rainbows.forEach(rb=>{
-        rb.life--;
         if(!rb.hit)drawRainbow(rctx,rb.x,rb.y);
     });
 
-    rainbows=rainbows.filter(rb=>rb.life>0&&!rb.hit);
+    if(!rainbowRunning){
+        rctx.fillStyle="#7c3aed";
+        rctx.font="34px Arial";
+        rctx.fillText("Tiden är slut! 🎀",245,210);
+    }
 
     requestAnimationFrame(rainbowLoop);
 }
