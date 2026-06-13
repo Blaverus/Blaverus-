@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Blaverus Block World</title>
+<title>Blaverus Block World Monsters</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:#0d1117;color:white;text-align:center}
-header{padding:18px;background:linear-gradient(135deg,#0066ff,#00aaff)}
+header{padding:16px;background:linear-gradient(135deg,#0066ff,#00aaff)}
 canvas{background:#74c7ec;border:3px solid #0066ff;margin-top:10px;max-width:96%;touch-action:none}
 button{padding:10px 14px;margin:4px;border:0;border-radius:9px;background:#0066ff;color:white;cursor:pointer}
-.panel{max-width:1000px;margin:10px auto}
+.panel{max-width:1050px;margin:10px auto}
 .hotbar{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:10px}
 .slot{padding:8px 12px;background:#161b22;border:2px solid #30363d;border-radius:10px}
 .active{border-color:#00aaff}
@@ -21,7 +21,7 @@ a{color:#00aaff}
 
 <header>
 <h1>⛏️ Blaverus Block World</h1>
-<p>Utforska, gräv, bygg, samla material och spara världen</p>
+<p>Monster, liv, strid, resurser och överlevnad</p>
 </header>
 
 <canvas id="game" width="900" height="500"></canvas>
@@ -30,6 +30,7 @@ a{color:#00aaff}
 <button onclick="moveLeft()">⬅️</button>
 <button onclick="jump()">⬆️ Hoppa</button>
 <button onclick="moveRight()">➡️</button>
+<button onclick="attack()">⚔️ Attack</button>
 <button onclick="setMode('dig')">Gräv</button>
 <button onclick="setMode('build')">Bygg</button>
 <button onclick="saveGame()">💾 Spara</button>
@@ -42,9 +43,11 @@ a{color:#00aaff}
 <p>
 Läge: <b id="modeText">Gräv</b> |
 Valt block: <b id="selectedText">Jord</b> |
-Tips: A/D gå, W/Space hoppa, G gräv, B bygg, 1-6 välj block
+HP: <b id="hpText">5</b>/5 |
+Monster: <b id="monsterText">0</b>
 </p>
 
+<p>A/D gå, W/Space hoppa, F attack, G gräv, B bygg, 1-6 välj block</p>
 <p><a href="index.html">← Tillbaka till Blaverus</a></p>
 
 <script>
@@ -59,188 +62,166 @@ let cameraX = 0;
 let cameraY = 0;
 let mode = "dig";
 let selected = "dirt";
-let mouse = {x:0,y:0};
-
 let keys = {};
 let world = [];
+let monsters = [];
+let particles = [];
+let dayTime = 0;
 
 let inventory = {
-    dirt: 0,
-    grass: 0,
-    stone: 0,
-    wood: 0,
-    leaf: 0,
-    coal: 0
+    dirt:0, grass:0, stone:0, wood:0, leaf:0, coal:0
 };
 
 const names = {
-    dirt:"Jord",
-    grass:"Gräs",
-    stone:"Sten",
-    wood:"Trä",
-    leaf:"Löv",
-    coal:"Kol"
+    dirt:"Jord", grass:"Gräs", stone:"Sten", wood:"Trä", leaf:"Löv", coal:"Kol"
 };
 
 let player = {
-    x: 160,
-    y: 100,
-    w: 24,
-    h: 40,
-    vx: 0,
-    vy: 0,
-    hp: 5,
-    onGround:false,
-    facing:1
+    x:160,y:100,w:24,h:40,
+    vx:0,vy:0,onGround:false,
+    facing:1,hp:5,maxHp:5,
+    invincible:0,attackCooldown:0,
+    spawnX:160,spawnY:100
 };
 
-function rand(seed){
-    return Math.abs(Math.sin(seed * 9999)) % 1;
-}
-
-function groundHeight(x){
-    return 14 + Math.floor(Math.sin(x*0.13)*2 + Math.sin(x*0.035)*4);
-}
+function rand(seed){return Math.abs(Math.sin(seed*9999))%1}
+function groundHeight(x){return 14 + Math.floor(Math.sin(x*.13)*2 + Math.sin(x*.035)*4)}
 
 function createWorld(){
-    world = [];
+    world=[];
+    monsters=[];
+    particles=[];
 
     for(let y=0;y<rows;y++){
-        world[y] = [];
+        world[y]=[];
         for(let x=0;x<cols;x++){
-            const g = groundHeight(x);
-
-            if(y < g) world[y][x] = "";
-            else if(y === g) world[y][x] = "grass";
-            else if(y < g+5) world[y][x] = "dirt";
-            else world[y][x] = "stone";
-
-            if(y > g+7 && rand(x*y+7) > 0.93) world[y][x] = "coal";
+            const g=groundHeight(x);
+            if(y<g) world[y][x]="";
+            else if(y===g) world[y][x]="grass";
+            else if(y<g+5) world[y][x]="dirt";
+            else world[y][x]="stone";
+            if(y>g+7 && rand(x*y+7)>0.93) world[y][x]="coal";
         }
     }
 
     for(let x=6;x<cols-6;x+=8){
-        if(rand(x) > 0.35){
-            addTree(x, groundHeight(x)-1);
-        }
+        if(rand(x)>0.35) addTree(x,groundHeight(x)-1);
     }
 
-    inventory = {dirt:0,grass:0,stone:0,wood:0,leaf:0,coal:0};
-    player.x = 160;
-    player.y = 100;
+    for(let x=12;x<cols-8;x+=14){
+        const g=groundHeight(x);
+        spawnMonster(x*tile, (g-1)*tile, rand(x)>0.5 ? "slime" : "goblin");
+    }
+
+    for(let x=30;x<cols-10;x+=35){
+        const g=groundHeight(x);
+        spawnMonster(x*tile, (g-2)*tile, "bat");
+    }
+
+    inventory={dirt:0,grass:0,stone:0,wood:0,leaf:0,coal:0};
+    player.x=160; player.y=100; player.hp=5; player.vx=0; player.vy=0;
     updateHotbar();
 }
 
 function addTree(x,y){
-    if(y < 6) return;
-
-    world[y][x] = "wood";
-    world[y-1][x] = "wood";
-    world[y-2][x] = "wood";
-    world[y-3][x] = "wood";
-
-    for(let yy=y-6; yy<=y-3; yy++){
-        for(let xx=x-2; xx<=x+2; xx++){
-            if(xx>=0 && xx<cols && yy>=0 && yy<rows){
-                if(Math.abs(xx-x)+Math.abs(yy-(y-4)) < 4){
-                    world[yy][xx] = "leaf";
-                }
+    if(y<6)return;
+    world[y][x]="wood"; world[y-1][x]="wood"; world[y-2][x]="wood"; world[y-3][x]="wood";
+    for(let yy=y-6;yy<=y-3;yy++){
+        for(let xx=x-2;xx<=x+2;xx++){
+            if(xx>=0&&xx<cols&&yy>=0&&yy<rows){
+                if(Math.abs(xx-x)+Math.abs(yy-(y-4))<4) world[yy][xx]="leaf";
             }
         }
     }
 }
 
-function setMode(m){
-    mode = m;
-    document.getElementById("modeText").textContent = m==="dig" ? "Gräv" : "Bygg";
+function spawnMonster(x,y,type){
+    const base = {
+        slime:{w:30,h:22,hp:3,speed:1.1,damage:1,color:"#22c55e",jump:true},
+        goblin:{w:26,h:38,hp:5,speed:1.45,damage:1,color:"#84cc16",jump:false},
+        bat:{w:30,h:22,hp:2,speed:1.8,damage:1,color:"#a855f7",fly:true}
+    }[type];
+
+    monsters.push({
+        type,x,y,w:base.w,h:base.h,
+        vx:0,vy:0,hp:base.hp,maxHp:base.hp,
+        speed:base.speed,damage:base.damage,
+        color:base.color,dir:Math.random()<.5?-1:1,
+        onGround:false,alert:false,hitCooldown:0,
+        aiTimer:0,dead:false,fly:base.fly||false,jumper:base.jump||false
+    });
 }
 
-function selectBlock(block){
-    selected = block;
-    document.getElementById("selectedText").textContent = names[block];
+function setMode(m){
+    mode=m;
+    document.getElementById("modeText").textContent=m==="dig"?"Gräv":"Bygg";
+}
+function selectBlock(b){
+    selected=b;
+    document.getElementById("selectedText").textContent=names[b];
     updateHotbar();
 }
-
 function updateHotbar(){
-    const hotbar = document.getElementById("hotbar");
-    hotbar.innerHTML = "";
-
+    const hotbar=document.getElementById("hotbar");
+    hotbar.innerHTML="";
     ["dirt","grass","stone","wood","leaf","coal"].forEach((b,i)=>{
-        const div = document.createElement("div");
-        div.className = "slot" + (selected===b ? " active" : "");
-        div.innerHTML = `${i+1}. ${names[b]}: ${inventory[b]}`;
-        div.onclick = () => selectBlock(b);
+        const div=document.createElement("div");
+        div.className="slot"+(selected===b?" active":"");
+        div.innerHTML=`${i+1}. ${names[b]}: ${inventory[b]}`;
+        div.onclick=()=>selectBlock(b);
         hotbar.appendChild(div);
     });
+    document.getElementById("hpText").textContent=player.hp;
+    document.getElementById("monsterText").textContent=monsters.filter(m=>!m.dead).length;
 }
 
 function moveLeft(){keys["a"]=true}
 function moveRight(){keys["d"]=true}
 function jump(){
     if(player.onGround){
-        player.vy = -10;
-        player.onGround = false;
+        player.vy=-10;
+        player.onGround=false;
     }
 }
 
 document.addEventListener("keydown",e=>{
-    keys[e.key.toLowerCase()] = true;
-
-    if(e.code==="Space" || e.key.toLowerCase()==="w"){
-        e.preventDefault();
-        jump();
-    }
-
-    if(e.key==="1") selectBlock("dirt");
-    if(e.key==="2") selectBlock("grass");
-    if(e.key==="3") selectBlock("stone");
-    if(e.key==="4") selectBlock("wood");
-    if(e.key==="5") selectBlock("leaf");
-    if(e.key==="6") selectBlock("coal");
-    if(e.key.toLowerCase()==="g") setMode("dig");
-    if(e.key.toLowerCase()==="b") setMode("build");
+    keys[e.key.toLowerCase()]=true;
+    if(e.code==="Space"||e.key.toLowerCase()==="w"){e.preventDefault();jump()}
+    if(e.key.toLowerCase()==="f") attack();
+    if(e.key==="1")selectBlock("dirt");
+    if(e.key==="2")selectBlock("grass");
+    if(e.key==="3")selectBlock("stone");
+    if(e.key==="4")selectBlock("wood");
+    if(e.key==="5")selectBlock("leaf");
+    if(e.key==="6")selectBlock("coal");
+    if(e.key.toLowerCase()==="g")setMode("dig");
+    if(e.key.toLowerCase()==="b")setMode("build");
 });
-
-document.addEventListener("keyup",e=>{
-    keys[e.key.toLowerCase()] = false;
-});
-
-canvas.addEventListener("mousemove",e=>{
-    const r = canvas.getBoundingClientRect();
-    mouse.x = (e.clientX-r.left) * canvas.width / r.width;
-    mouse.y = (e.clientY-r.top) * canvas.height / r.height;
-});
+document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 
 canvas.addEventListener("click",e=>{
-    const r = canvas.getBoundingClientRect();
-    const mx = (e.clientX-r.left) * canvas.width / r.width + cameraX;
-    const my = (e.clientY-r.top) * canvas.height / r.height + cameraY;
+    const r=canvas.getBoundingClientRect();
+    const mx=(e.clientX-r.left)*canvas.width/r.width+cameraX;
+    const my=(e.clientY-r.top)*canvas.height/r.height+cameraY;
+    const x=Math.floor(mx/tile), y=Math.floor(my/tile);
+    if(x<0||x>=cols||y<0||y>=rows)return;
 
-    const x = Math.floor(mx/tile);
-    const y = Math.floor(my/tile);
-
-    if(x<0 || x>=cols || y<0 || y>=rows) return;
-
-    const px = Math.floor((player.x+player.w/2)/tile);
-    const py = Math.floor((player.y+player.h/2)/tile);
-    const dist = Math.abs(px-x)+Math.abs(py-y);
-
-    if(dist>7) return;
+    const px=Math.floor((player.x+player.w/2)/tile);
+    const py=Math.floor((player.y+player.h/2)/tile);
+    if(Math.abs(px-x)+Math.abs(py-y)>7)return;
 
     if(mode==="dig"){
-        const block = world[y][x];
+        const block=world[y][x];
         if(block){
-            if(block==="grass") inventory.grass++;
+            if(block==="grass")inventory.grass++;
             else inventory[block]++;
             world[y][x]="";
             updateHotbar();
         }
     }else{
-        if(world[y][x]==="" && inventory[selected]>0){
-            const bx = x*tile;
-            const by = y*tile;
-
-            if(!(player.x < bx+tile && player.x+player.w > bx && player.y < by+tile && player.y+player.h > by)){
+        if(world[y][x]===""&&inventory[selected]>0){
+            const bx=x*tile, by=y*tile;
+            if(!(player.x<bx+tile&&player.x+player.w>bx&&player.y<by+tile&&player.y+player.h>by)){
                 world[y][x]=selected;
                 inventory[selected]--;
                 updateHotbar();
@@ -250,135 +231,338 @@ canvas.addEventListener("click",e=>{
 });
 
 function isSolid(px,py){
-    const x = Math.floor(px/tile);
-    const y = Math.floor(py/tile);
-    if(x<0 || x>=cols || y<0 || y>=rows) return false;
-    return world[y][x] !== "";
+    const x=Math.floor(px/tile), y=Math.floor(py/tile);
+    if(x<0||x>=cols||y<0||y>=rows)return false;
+    return world[y][x]!=="";
+}
+
+function rectHit(a,b){
+    return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+}
+
+function damagePlayer(amount,fromX){
+    if(player.invincible>0)return;
+    player.hp-=amount;
+    player.invincible=70;
+    player.vx = player.x < fromX ? -7 : 7;
+    player.vy = -6;
+    makeParticles(player.x+player.w/2,player.y+player.h/2,"#ef4444",12);
+    if(player.hp<=0) respawn();
+    updateHotbar();
+}
+
+function respawn(){
+    alert("Du dog! Du respawnar vid starten.");
+    player.x=player.spawnX;
+    player.y=player.spawnY;
+    player.hp=player.maxHp;
+    player.vx=0; player.vy=0;
+    player.invincible=120;
+}
+
+function attack(){
+    if(player.attackCooldown>0)return;
+    player.attackCooldown=28;
+
+    const range={
+        x: player.facing===1 ? player.x+player.w : player.x-48,
+        y: player.y+4,
+        w: 48,
+        h: 34
+    };
+
+    monsters.forEach(m=>{
+        if(m.dead)return;
+        if(rectHit(range,m)){
+            m.hp-=1;
+            m.vx=player.facing*6;
+            m.vy=-4;
+            m.hitCooldown=12;
+            makeParticles(m.x+m.w/2,m.y+m.h/2,"#facc15",10);
+            if(m.hp<=0) killMonster(m);
+        }
+    });
+}
+
+function killMonster(m){
+    m.dead=true;
+    makeParticles(m.x+m.w/2,m.y+m.h/2,m.color,24);
+
+    if(m.type==="slime") inventory.leaf += 1;
+    if(m.type==="goblin") inventory.wood += 2;
+    if(m.type==="bat") inventory.coal += 1;
+
+    updateHotbar();
+}
+
+function makeParticles(x,y,color,count){
+    for(let i=0;i<count;i++){
+        particles.push({
+            x,y,
+            vx:(Math.random()-.5)*5,
+            vy:(Math.random()-.8)*5,
+            life:35,
+            color
+        });
+    }
+}
+
+function updatePlayer(){
+    if(player.invincible>0)player.invincible--;
+    if(player.attackCooldown>0)player.attackCooldown--;
+
+    player.vx=0;
+    if(keys["a"]){player.vx=-4;player.facing=-1}
+    if(keys["d"]){player.vx=4;player.facing=1}
+
+    player.vy+=.45;
+    if(player.vy>12)player.vy=12;
+
+    player.x+=player.vx;
+    if(player.x<0)player.x=0;
+    if(player.x+player.w>cols*tile)player.x=cols*tile-player.w;
+
+    if(isSolid(player.x,player.y+2)||isSolid(player.x+player.w,player.y+2)||isSolid(player.x,player.y+player.h-2)||isSolid(player.x+player.w,player.y+player.h-2)){
+        player.x-=player.vx;
+    }
+
+    player.y+=player.vy;
+    player.onGround=false;
+
+    if(player.vy>=0){
+        if(isSolid(player.x+3,player.y+player.h)||isSolid(player.x+player.w-3,player.y+player.h)){
+            player.y=Math.floor((player.y+player.h)/tile)*tile-player.h;
+            player.vy=0;
+            player.onGround=true;
+        }
+    }else{
+        if(isSolid(player.x+3,player.y)||isSolid(player.x+player.w-3,player.y)){
+            player.y=Math.floor(player.y/tile+1)*tile;
+            player.vy=0;
+        }
+    }
+
+    if(player.y>rows*tile) respawn();
+}
+
+function updateMonster(m){
+    if(m.dead)return;
+    if(m.hitCooldown>0)m.hitCooldown--;
+
+    const distX=(player.x+player.w/2)-(m.x+m.w/2);
+    const distY=(player.y+player.h/2)-(m.y+m.h/2);
+    const dist=Math.sqrt(distX*distX+distY*distY);
+
+    if(dist<280)m.alert=true;
+    if(dist>480)m.alert=false;
+
+    if(m.fly){
+        if(m.alert){
+            m.vx=Math.sign(distX)*m.speed;
+            m.vy=Math.sign(distY)*m.speed*.65;
+        }else{
+            m.aiTimer--;
+            if(m.aiTimer<=0){
+                m.aiTimer=80+Math.random()*90;
+                m.dir*=-1;
+            }
+            m.vx=m.dir*.8;
+            m.vy=Math.sin(dayTime/30+m.x)*.8;
+        }
+
+        m.x+=m.vx;
+        m.y+=m.vy;
+    }else{
+        if(m.alert)m.dir=Math.sign(distX)||m.dir;
+
+        m.vx=m.dir*m.speed;
+        m.vy+=.45;
+        if(m.vy>10)m.vy=10;
+
+        m.x+=m.vx;
+
+        const frontX=m.dir===1?m.x+m.w+2:m.x-2;
+        const footY=m.y+m.h+3;
+
+        if(isSolid(m.x,m.y+2)||isSolid(m.x+m.w,m.y+2)||isSolid(m.x,m.y+m.h-2)||isSolid(m.x+m.w,m.y+m.h-2)){
+            m.x-=m.vx;
+            m.dir*=-1;
+        }
+
+        if(!isSolid(frontX,footY)&&m.onGround&&!m.alert){
+            m.dir*=-1;
+        }
+
+        if(m.jumper&&m.onGround&&Math.random()<.01){
+            m.vy=-7;
+        }
+
+        if(m.alert&&m.onGround&&Math.abs(distX)<120&&Math.random()<.025){
+            m.vy=-8;
+        }
+
+        m.y+=m.vy;
+        m.onGround=false;
+
+        if(m.vy>=0){
+            if(isSolid(m.x+3,m.y+m.h)||isSolid(m.x+m.w-3,m.y+m.h)){
+                m.y=Math.floor((m.y+m.h)/tile)*tile-m.h;
+                m.vy=0;
+                m.onGround=true;
+            }
+        }else{
+            if(isSolid(m.x+3,m.y)||isSolid(m.x+m.w-3,m.y)){
+                m.y=Math.floor(m.y/tile+1)*tile;
+                m.vy=0;
+            }
+        }
+    }
+
+    if(rectHit(player,m)){
+        damagePlayer(m.damage,m.x);
+    }
+
+    if(m.y>rows*tile)m.dead=true;
+}
+
+function updateParticles(){
+    particles.forEach(p=>{
+        p.x+=p.vx;
+        p.y+=p.vy;
+        p.vy+=.2;
+        p.life--;
+    });
+    particles=particles.filter(p=>p.life>0);
 }
 
 function update(){
-    player.vx = 0;
+    dayTime++;
 
-    if(keys["a"]){
-        player.vx = -4;
-        player.facing = -1;
-    }
+    updatePlayer();
+    monsters.forEach(updateMonster);
+    updateParticles();
 
-    if(keys["d"]){
-        player.vx = 4;
-        player.facing = 1;
-    }
-
-    player.vy += 0.45;
-    if(player.vy > 12) player.vy = 12;
-
-    player.x += player.vx;
-
-    if(player.x<0) player.x=0;
-    if(player.x+player.w>cols*tile) player.x=cols*tile-player.w;
-
-    if(
-        isSolid(player.x,player.y+2) ||
-        isSolid(player.x+player.w,player.y+2) ||
-        isSolid(player.x,player.y+player.h-2) ||
-        isSolid(player.x+player.w,player.y+player.h-2)
-    ){
-        player.x -= player.vx;
-    }
-
-    player.y += player.vy;
-    player.onGround = false;
-
-    if(player.vy >= 0){
-        if(isSolid(player.x+3,player.y+player.h) || isSolid(player.x+player.w-3,player.y+player.h)){
-            player.y = Math.floor((player.y+player.h)/tile)*tile-player.h;
-            player.vy = 0;
-            player.onGround = true;
-        }
-    }else{
-        if(isSolid(player.x+3,player.y) || isSolid(player.x+player.w-3,player.y)){
-            player.y = Math.floor(player.y/tile+1)*tile;
-            player.vy = 0;
-        }
-    }
-
-    cameraX = player.x - canvas.width/2;
-    cameraY = player.y - canvas.height/2;
-
-    cameraX = Math.max(0, Math.min(cameraX, cols*tile-canvas.width));
-    cameraY = Math.max(0, Math.min(cameraY, rows*tile-canvas.height));
+    cameraX=player.x-canvas.width/2;
+    cameraY=player.y-canvas.height/2;
+    cameraX=Math.max(0,Math.min(cameraX,cols*tile-canvas.width));
+    cameraY=Math.max(0,Math.min(cameraY,rows*tile-canvas.height));
 
     draw();
     requestAnimationFrame(update);
 }
 
 function drawBlock(type,x,y){
-    const sx = x*tile-cameraX;
-    const sy = y*tile-cameraY;
+    const sx=x*tile-cameraX, sy=y*tile-cameraY;
 
-    if(type==="grass"){
-        ctx.fillStyle="#22c55e";
-        ctx.fillRect(sx,sy,tile,tile);
-        ctx.fillStyle="#8b5a2b";
-        ctx.fillRect(sx,sy+9,tile,tile-9);
-    }
+    if(type==="grass"){ctx.fillStyle="#22c55e";ctx.fillRect(sx,sy,tile,tile);ctx.fillStyle="#8b5a2b";ctx.fillRect(sx,sy+9,tile,tile-9)}
+    if(type==="dirt"){ctx.fillStyle="#8b5a2b";ctx.fillRect(sx,sy,tile,tile);ctx.fillStyle="#6b3f1d";ctx.fillRect(sx+6,sy+8,6,4);ctx.fillRect(sx+18,sy+20,8,4)}
+    if(type==="stone"){ctx.fillStyle="#64748b";ctx.fillRect(sx,sy,tile,tile);ctx.fillStyle="#475569";ctx.fillRect(sx+5,sy+6,8,5);ctx.fillRect(sx+18,sy+18,9,6)}
+    if(type==="coal"){ctx.fillStyle="#64748b";ctx.fillRect(sx,sy,tile,tile);ctx.fillStyle="#111";ctx.beginPath();ctx.arc(sx+11,sy+11,4,0,Math.PI*2);ctx.arc(sx+22,sy+20,5,0,Math.PI*2);ctx.fill()}
+    if(type==="wood"){ctx.fillStyle="#92400e";ctx.fillRect(sx,sy,tile,tile);ctx.fillStyle="#5c2e0b";ctx.fillRect(sx+8,sy,4,tile);ctx.fillRect(sx+20,sy,3,tile)}
+    if(type==="leaf"){ctx.fillStyle="#16a34a";ctx.fillRect(sx,sy,tile,tile);ctx.fillStyle="#22c55e";ctx.fillRect(sx+5,sy+5,10,10);ctx.fillRect(sx+18,sy+14,9,9)}
 
-    if(type==="dirt"){
-        ctx.fillStyle="#8b5a2b";
-        ctx.fillRect(sx,sy,tile,tile);
-        ctx.fillStyle="#6b3f1d";
-        ctx.fillRect(sx+6,sy+8,6,4);
-        ctx.fillRect(sx+18,sy+20,8,4);
-    }
+    ctx.strokeStyle="rgba(0,0,0,.22)";
+    ctx.strokeRect(sx,sy,tile,tile);
+}
 
-    if(type==="stone"){
-        ctx.fillStyle="#64748b";
-        ctx.fillRect(sx,sy,tile,tile);
-        ctx.fillStyle="#475569";
-        ctx.fillRect(sx+5,sy+6,8,5);
-        ctx.fillRect(sx+18,sy+18,9,6);
-    }
+function drawMonster(m){
+    if(m.dead)return;
+    const x=m.x-cameraX, y=m.y-cameraY;
 
-    if(type==="coal"){
-        ctx.fillStyle="#64748b";
-        ctx.fillRect(sx,sy,tile,tile);
-        ctx.fillStyle="#111";
+    ctx.globalAlpha = m.hitCooldown>0 ? .45 : 1;
+
+    if(m.type==="slime"){
+        ctx.fillStyle=m.color;
         ctx.beginPath();
-        ctx.arc(sx+11,sy+11,4,0,Math.PI*2);
-        ctx.arc(sx+22,sy+20,5,0,Math.PI*2);
+        ctx.ellipse(x+m.w/2,y+m.h/2,m.w/2,m.h/2,0,0,Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle="#052e16";
+        ctx.fillRect(x+8,y+8,4,4);
+        ctx.fillRect(x+20,y+8,4,4);
+    }
+
+    if(m.type==="goblin"){
+        ctx.fillStyle=m.color;
+        ctx.fillRect(x,y+10,m.w,m.h-10);
+        ctx.fillStyle="#bef264";
+        ctx.fillRect(x+3,y,20,16);
+        ctx.fillStyle="#111";
+        ctx.fillRect(x+7,y+6,3,3);
+        ctx.fillRect(x+17,y+6,3,3);
+        ctx.fillStyle="#78350f";
+        ctx.fillRect(x+m.w/2-2,y+22,18,5);
+    }
+
+    if(m.type==="bat"){
+        ctx.fillStyle=m.color;
+        ctx.beginPath();
+        ctx.arc(x+m.w/2,y+m.h/2,9,0,Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(x+4,y+10);
+        ctx.lineTo(x-14,y+2);
+        ctx.lineTo(x+2,y+20);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(x+m.w-4,y+10);
+        ctx.lineTo(x+m.w+14,y+2);
+        ctx.lineTo(x+m.w-2,y+20);
         ctx.fill();
     }
 
-    if(type==="wood"){
-        ctx.fillStyle="#92400e";
-        ctx.fillRect(sx,sy,tile,tile);
-        ctx.fillStyle="#5c2e0b";
-        ctx.fillRect(sx+8,sy,4,tile);
-        ctx.fillRect(sx+20,sy,3,tile);
-    }
+    ctx.globalAlpha=1;
 
-    if(type==="leaf"){
-        ctx.fillStyle="#16a34a";
-        ctx.fillRect(sx,sy,tile,tile);
-        ctx.fillStyle="#22c55e";
-        ctx.fillRect(sx+5,sy+5,10,10);
-        ctx.fillRect(sx+18,sy+14,9,9);
-    }
+    const barW=m.w;
+    ctx.fillStyle="#111";
+    ctx.fillRect(x,y-8,barW,4);
+    ctx.fillStyle="#ef4444";
+    ctx.fillRect(x,y-8,barW*(m.hp/m.maxHp),4);
+}
 
-    ctx.strokeStyle="rgba(0,0,0,0.22)";
-    ctx.strokeRect(sx,sy,tile,tile);
+function drawPlayer(){
+    const px=player.x-cameraX, py=player.y-cameraY;
+
+    if(player.invincible>0 && Math.floor(player.invincible/6)%2===0)return;
+
+    ctx.fillStyle="#2563eb";
+    ctx.fillRect(px,py+12,player.w,player.h-12);
+    ctx.fillStyle="#facc15";
+    ctx.fillRect(px+3,py,18,16);
+    ctx.fillStyle="#111";
+    if(player.facing===1)ctx.fillRect(px+15,py+6,3,3);
+    else ctx.fillRect(px+5,py+6,3,3);
+
+    if(player.attackCooldown>12){
+        ctx.fillStyle="#e5e7eb";
+        if(player.facing===1) ctx.fillRect(px+player.w,py+18,38,6);
+        else ctx.fillRect(px-38,py+18,38,6);
+    }
+}
+
+function drawHearts(){
+    for(let i=0;i<player.maxHp;i++){
+        ctx.fillStyle=i<player.hp?"#ef4444":"#374151";
+        ctx.beginPath();
+        ctx.arc(24+i*28,24,8,0,Math.PI*2);
+        ctx.arc(34+i*28,24,8,0,Math.PI*2);
+        ctx.moveTo(16+i*28,28);
+        ctx.lineTo(29+i*28,43);
+        ctx.lineTo(42+i*28,28);
+        ctx.fill();
+    }
 }
 
 function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    ctx.fillStyle="#74c7ec";
+    const night = (Math.sin(dayTime/900)+1)/2;
+    ctx.fillStyle = night>.55 ? "#1e3a8a" : "#74c7ec";
     ctx.fillRect(0,0,canvas.width,canvas.height);
 
-    ctx.fillStyle="rgba(255,255,255,0.8)";
+    ctx.fillStyle="rgba(255,255,255,.82)";
     for(let i=0;i<8;i++){
-        let cx = (i*260 - cameraX*0.25) % (canvas.width+200);
-        if(cx< -100) cx += canvas.width+200;
+        let cx=(i*260-cameraX*.25)%(canvas.width+200);
+        if(cx<-100)cx+=canvas.width+200;
         ctx.beginPath();
         ctx.arc(cx,70+(i%3)*35,22,0,Math.PI*2);
         ctx.arc(cx+25,70+(i%3)*35,28,0,Math.PI*2);
@@ -386,79 +570,57 @@ function draw(){
         ctx.fill();
     }
 
-    ctx.fillStyle="#facc15";
-    ctx.beginPath();
-    ctx.arc(760-cameraX*0.05,80-cameraY*0.02,35,0,Math.PI*2);
-    ctx.fill();
-
-    const startX = Math.floor(cameraX/tile);
-    const endX = Math.ceil((cameraX+canvas.width)/tile);
-    const startY = Math.floor(cameraY/tile);
-    const endY = Math.ceil((cameraY+canvas.height)/tile);
+    const startX=Math.floor(cameraX/tile);
+    const endX=Math.ceil((cameraX+canvas.width)/tile);
+    const startY=Math.floor(cameraY/tile);
+    const endY=Math.ceil((cameraY+canvas.height)/tile);
 
     for(let y=startY;y<=endY;y++){
         for(let x=startX;x<=endX;x++){
-            if(x<0||x>=cols||y<0||y>=rows) continue;
-            if(world[y][x]) drawBlock(world[y][x],x,y);
+            if(x<0||x>=cols||y<0||y>=rows)continue;
+            if(world[y][x])drawBlock(world[y][x],x,y);
         }
     }
 
-    const px = player.x-cameraX;
-    const py = player.y-cameraY;
+    monsters.forEach(drawMonster);
+    drawPlayer();
 
-    ctx.fillStyle="#2563eb";
-    ctx.fillRect(px,py+12,player.w,player.h-12);
+    particles.forEach(p=>{
+        ctx.fillStyle=p.color;
+        ctx.globalAlpha=p.life/35;
+        ctx.fillRect(p.x-cameraX,p.y-cameraY,4,4);
+        ctx.globalAlpha=1;
+    });
 
-    ctx.fillStyle="#facc15";
-    ctx.fillRect(px+3,py,18,16);
+    drawHearts();
 
-    ctx.fillStyle="#111";
-    if(player.facing===1) ctx.fillRect(px+15,py+6,3,3);
-    else ctx.fillRect(px+5,py+6,3,3);
-
-    ctx.fillStyle="#1e40af";
-    ctx.fillRect(px+3,py+player.h-6,7,6);
-    ctx.fillRect(px+14,py+player.h-6,7,6);
-
-    drawUI();
-}
-
-function drawUI(){
-    ctx.fillStyle="rgba(0,0,0,0.45)";
-    ctx.fillRect(10,10,260,58);
+    ctx.fillStyle="rgba(0,0,0,.45)";
+    ctx.fillRect(10,58,310,54);
     ctx.fillStyle="white";
-    ctx.font="16px Arial";
-    ctx.fillText("Block World",22,32);
-    ctx.font="13px Arial";
-    ctx.fillText("Utforska åt höger/vänster. Världen är stor.",22,54);
+    ctx.font="14px Arial";
+    ctx.fillText("Monster: Slime hoppar, Goblin jagar, Bat flyger",22,80);
+    ctx.fillText("Attackera med F eller knappen ⚔️",22,100);
 }
 
 function saveGame(){
-    localStorage.setItem("blockWorldFullSave", JSON.stringify({
-        world, inventory, player
-    }));
+    localStorage.setItem("blockWorldMonsterSave",JSON.stringify({world,inventory,player,monsters}));
     alert("Sparat!");
 }
 
 function loadGame(){
-    const data = localStorage.getItem("blockWorldFullSave");
-    if(!data){
-        alert("Ingen sparad värld finns.");
-        return;
-    }
-
-    const save = JSON.parse(data);
-    world = save.world;
-    inventory = save.inventory;
-    player = save.player;
+    const data=localStorage.getItem("blockWorldMonsterSave");
+    if(!data){alert("Ingen sparad värld finns.");return}
+    const save=JSON.parse(data);
+    world=save.world;
+    inventory=save.inventory;
+    player=save.player;
+    monsters=save.monsters||[];
     updateHotbar();
     alert("Laddat!");
 }
 
 function newWorld(){
-    if(confirm("Vill du skapa en ny värld? Det du inte sparat försvinner.")){
-        createWorld();
-    }
+    if(confirm("Skapa ny värld?"))createWorld();
 }
 
 createWorld();
