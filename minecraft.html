@@ -3,73 +3,155 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Blaverus Block World</title>
+<title>Blaverus Block World 2.0</title>
 <style>
 body{margin:0;font-family:Arial,sans-serif;background:#0d1117;color:white;text-align:center}
 header{padding:20px;background:linear-gradient(135deg,#0066ff,#00aaff)}
 canvas{background:#7dd3fc;border:3px solid #0066ff;margin-top:15px;max-width:95%;touch-action:none}
-button{padding:12px 16px;margin:5px;border:0;border-radius:10px;background:#0066ff;color:white;font-size:1rem}
+button{padding:10px 14px;margin:4px;border:0;border-radius:9px;background:#0066ff;color:white;font-size:1rem;cursor:pointer}
+.panel{margin:10px auto;max-width:900px}
 a{color:#00aaff}
 </style>
 </head>
 <body>
 
 <header>
-<h1>⛏️ Blaverus Block World</h1>
-<p>Gå, hoppa, gräv och bygg</p>
+<h1>⛏️ Block World 2.0</h1>
+<p>Gräv, samla material och bygg</p>
 </header>
 
-<canvas id="game" width="600" height="400"></canvas><br>
+<canvas id="game" width="700" height="420"></canvas>
 
+<div class="panel">
 <button onclick="moveLeft()">⬅️</button>
 <button onclick="jump()">⬆️ Hoppa</button>
 <button onclick="moveRight()">➡️</button>
-<button onclick="toggleMode()">Byt läge: <span id="modeText">Gräv</span></button>
+<button onclick="setMode('dig')">Gräv</button>
+<button onclick="setMode('build')">Bygg</button>
+<button onclick="selectBlock('dirt')">Jord</button>
+<button onclick="selectBlock('stone')">Sten</button>
+<button onclick="selectBlock('wood')">Trä</button>
+<button onclick="selectBlock('leaf')">Löv</button>
+</div>
 
-<p>Klicka på block för att gräva/bygga. Tangenter: A/D, W och mellanslag.</p>
+<p>
+Läge: <b id="modeText">Gräv</b> |
+Valt block: <b id="blockText">Jord</b>
+</p>
+
+<p>
+Jord: <span id="dirtCount">0</span> |
+Sten: <span id="stoneCount">0</span> |
+Trä: <span id="woodCount">0</span> |
+Löv: <span id="leafCount">0</span>
+</p>
+
+<p>Klicka på block för att gräva eller bygga. Tangenter: A/D, W eller mellanslag.</p>
 <p><a href="index.html">← Tillbaka till Blaverus</a></p>
 
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-const modeText = document.getElementById("modeText");
 
-const tile = 30;
-const rows = 14;
-const cols = 20;
+const tile = 28;
+const rows = 15;
+const cols = 25;
 
 let mode = "dig";
+let selectedBlock = "dirt";
 
-let world = [];
+let inventory = {
+    dirt:0,
+    stone:0,
+    wood:0,
+    leaf:0
+};
+
 let player = {
     x: 90,
     y: 180,
-    w: 24,
+    w: 22,
     h: 34,
     vx: 0,
     vy: 0,
     onGround: false
 };
 
-for(let y=0;y<rows;y++){
-    world[y] = [];
-    for(let x=0;x<cols;x++){
-        if(y > 9) world[y][x] = "dirt";
-        else if(y === 9) world[y][x] = "grass";
-        else world[y][x] = "";
+let world = [];
+
+function createWorld(){
+    world = [];
+
+    for(let y=0;y<rows;y++){
+        world[y] = [];
+
+        for(let x=0;x<cols;x++){
+            if(y > 11) world[y][x] = "stone";
+            else if(y > 8) world[y][x] = "dirt";
+            else if(y === 8) world[y][x] = "grass";
+            else world[y][x] = "";
+        }
     }
+
+    // Träd
+    addTree(5,7);
+    addTree(13,7);
+    addTree(20,7);
+
+    // Sten i marken
+    world[10][3] = "stone";
+    world[10][4] = "stone";
+    world[11][17] = "stone";
+    world[11][18] = "stone";
 }
 
-function toggleMode(){
-    mode = mode === "dig" ? "build" : "dig";
-    modeText.textContent = mode === "dig" ? "Gräv" : "Bygg";
+function addTree(x,y){
+    world[y][x] = "wood";
+    world[y-1][x] = "wood";
+    world[y-2][x] = "wood";
+
+    for(let yy=y-4; yy<=y-2; yy++){
+        for(let xx=x-2; xx<=x+2; xx++){
+            if(xx>=0 && xx<cols && yy>=0 && yy<rows){
+                world[yy][xx] = "leaf";
+            }
+        }
+    }
+
+    world[y-5][x] = "leaf";
+}
+
+function setMode(newMode){
+    mode = newMode;
+    document.getElementById("modeText").textContent = mode === "dig" ? "Gräv" : "Bygg";
+}
+
+function selectBlock(block){
+    selectedBlock = block;
+
+    const names = {
+        dirt:"Jord",
+        stone:"Sten",
+        wood:"Trä",
+        leaf:"Löv"
+    };
+
+    document.getElementById("blockText").textContent = names[block];
+}
+
+function updateInventory(){
+    document.getElementById("dirtCount").textContent = inventory.dirt;
+    document.getElementById("stoneCount").textContent = inventory.stone;
+    document.getElementById("woodCount").textContent = inventory.wood;
+    document.getElementById("leafCount").textContent = inventory.leaf;
 }
 
 function moveLeft(){ player.vx = -3; }
 function moveRight(){ player.vx = 3; }
+
 function jump(){
     if(player.onGround){
-        player.vy = -8;
+        player.vy = -8.5;
         player.onGround = false;
     }
 }
@@ -77,10 +159,14 @@ function jump(){
 document.addEventListener("keydown", e=>{
     if(e.key.toLowerCase()==="a") moveLeft();
     if(e.key.toLowerCase()==="d") moveRight();
+
     if(e.key.toLowerCase()==="w" || e.code==="Space"){
         e.preventDefault();
         jump();
     }
+
+    if(e.key==="1") setMode("dig");
+    if(e.key==="2") setMode("build");
 });
 
 document.addEventListener("keyup", e=>{
@@ -102,11 +188,31 @@ canvas.addEventListener("click", e=>{
 
     if(x < 0 || x >= cols || y < 0 || y >= rows) return;
 
+    const playerTileX = Math.floor((player.x + player.w/2) / tile);
+    const playerTileY = Math.floor((player.y + player.h/2) / tile);
+
+    const distance = Math.abs(playerTileX - x) + Math.abs(playerTileY - y);
+
+    if(distance > 5){
+        alert("Du är för långt bort från blocket.");
+        return;
+    }
+
     if(mode === "dig"){
-        world[y][x] = "";
+        const block = world[y][x];
+
+        if(block !== ""){
+            if(block === "grass") inventory.dirt++;
+            else inventory[block]++;
+
+            world[y][x] = "";
+            updateInventory();
+        }
     } else {
-        if(world[y][x] === ""){
-            world[y][x] = "dirt";
+        if(world[y][x] === "" && inventory[selectedBlock] > 0){
+            world[y][x] = selectedBlock;
+            inventory[selectedBlock]--;
+            updateInventory();
         }
     }
 });
@@ -160,41 +266,71 @@ function update(){
     requestAnimationFrame(update);
 }
 
+function drawBlock(block,x,y){
+    if(block === "grass"){
+        ctx.fillStyle = "#22c55e";
+        ctx.fillRect(x*tile,y*tile,tile,tile);
+        ctx.fillStyle = "#8b5a2b";
+        ctx.fillRect(x*tile,y*tile+8,tile,tile-8);
+    }
+
+    if(block === "dirt"){
+        ctx.fillStyle = "#8b5a2b";
+        ctx.fillRect(x*tile,y*tile,tile,tile);
+    }
+
+    if(block === "stone"){
+        ctx.fillStyle = "#64748b";
+        ctx.fillRect(x*tile,y*tile,tile,tile);
+    }
+
+    if(block === "wood"){
+        ctx.fillStyle = "#92400e";
+        ctx.fillRect(x*tile,y*tile,tile,tile);
+    }
+
+    if(block === "leaf"){
+        ctx.fillStyle = "#16a34a";
+        ctx.fillRect(x*tile,y*tile,tile,tile);
+    }
+
+    ctx.strokeStyle = "rgba(0,0,0,0.25)";
+    ctx.strokeRect(x*tile,y*tile,tile,tile);
+}
+
 function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
     ctx.fillStyle = "#7dd3fc";
     ctx.fillRect(0,0,canvas.width,canvas.height);
 
+    ctx.fillStyle = "#facc15";
+    ctx.beginPath();
+    ctx.arc(620,65,28,0,Math.PI*2);
+    ctx.fill();
+
     for(let y=0;y<rows;y++){
         for(let x=0;x<cols;x++){
             const block = world[y][x];
-            if(!block) continue;
-
-            if(block === "grass"){
-                ctx.fillStyle = "#22c55e";
-                ctx.fillRect(x*tile,y*tile,tile,tile);
-                ctx.fillStyle = "#8b5a2b";
-                ctx.fillRect(x*tile,y*tile+8,tile,tile-8);
+            if(block){
+                drawBlock(block,x,y);
             }
-
-            if(block === "dirt"){
-                ctx.fillStyle = "#8b5a2b";
-                ctx.fillRect(x*tile,y*tile,tile,tile);
-            }
-
-            ctx.strokeStyle = "rgba(0,0,0,0.25)";
-            ctx.strokeRect(x*tile,y*tile,tile,tile);
         }
     }
 
+    // Spelare
     ctx.fillStyle = "#2563eb";
     ctx.fillRect(player.x,player.y,player.w,player.h);
 
     ctx.fillStyle = "#facc15";
-    ctx.fillRect(player.x+5,player.y+5,14,10);
+    ctx.fillRect(player.x+5,player.y+4,12,10);
+
+    ctx.fillStyle = "#111";
+    ctx.fillRect(player.x+14,player.y+7,3,3);
 }
 
+createWorld();
+updateInventory();
 update();
 </script>
 
