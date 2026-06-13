@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blaverus Space Invaders</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#050816;color:white;text-align:center}
+header{padding:22px;background:linear-gradient(135deg,#0066ff,#00aaff)}
+canvas{background:#000;border:3px solid #0066ff;margin-top:15px;max-width:95%;touch-action:none}
+button{padding:12px 18px;margin:6px;border:0;border-radius:10px;background:#0066ff;color:white;font-size:1rem;cursor:pointer}
+a{color:#00aaff}
+</style>
+</head>
+<body>
+
+<header>
+<h1>👾 Blaverus Space</h1>
+<p>Skjut fiender och slå ditt rekord</p>
+</header>
+
+<p>Poäng: <span id="score">0</span> | Highscore: <span id="highscore">0</span></p>
+
+<canvas id="game" width="420" height="520"></canvas><br>
+
+<button onclick="moveLeft()">⬅️</button>
+<button onclick="shoot()">🔥 Skjut</button>
+<button onclick="moveRight()">➡️</button>
+<button onclick="restart()">Starta om</button>
+
+<p><a href="index.html">← Tillbaka till Blaverus</a></p>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let player, bullets, enemies, score, highscore, gameOver, enemyDir, enemySpeed;
+highscore = Number(localStorage.getItem("spaceHighscore")) || 0;
+document.getElementById("highscore").textContent = highscore;
+
+function restart(){
+    player = {x:185,y:465,w:50,h:22};
+    bullets = [];
+    enemies = [];
+    score = 0;
+    gameOver = false;
+    enemyDir = 1;
+    enemySpeed = 0.6;
+    document.getElementById("score").textContent = score;
+
+    for(let row=0; row<4; row++){
+        for(let col=0; col<7; col++){
+            enemies.push({x:45+col*50,y:55+row*38,w:32,h:22,alive:true});
+        }
+    }
+}
+
+function moveLeft(){
+    player.x -= 22;
+    if(player.x < 0) player.x = 0;
+}
+
+function moveRight(){
+    player.x += 22;
+    if(player.x + player.w > canvas.width) player.x = canvas.width - player.w;
+}
+
+function shoot(){
+    if(gameOver) return;
+    bullets.push({x:player.x + player.w/2 - 3,y:player.y,w:6,h:14});
+}
+
+document.addEventListener("keydown", e=>{
+    if(e.key==="ArrowLeft") moveLeft();
+    if(e.key==="ArrowRight") moveRight();
+    if(e.code==="Space"){
+        e.preventDefault();
+        shoot();
+    }
+});
+
+function drawPlayer(){
+    ctx.fillStyle="#00aaff";
+    ctx.fillRect(player.x,player.y,player.w,player.h);
+    ctx.fillStyle="#fff";
+    ctx.fillRect(player.x+20,player.y-12,10,12);
+}
+
+function drawEnemies(){
+    enemies.forEach(enemy=>{
+        if(!enemy.alive) return;
+        ctx.fillStyle="#22c55e";
+        ctx.fillRect(enemy.x,enemy.y,enemy.w,enemy.h);
+        ctx.fillStyle="#000";
+        ctx.fillRect(enemy.x+6,enemy.y+6,5,5);
+        ctx.fillRect(enemy.x+21,enemy.y+6,5,5);
+    });
+}
+
+function drawBullets(){
+    ctx.fillStyle="#ffdd00";
+    bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
+}
+
+function collision(a,b){
+    return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+}
+
+function endGame(){
+    gameOver = true;
+    if(score > highscore){
+        highscore = score;
+        localStorage.setItem("spaceHighscore", highscore);
+        document.getElementById("highscore").textContent = highscore;
+    }
+}
+
+function update(){
+    if(!gameOver){
+        bullets.forEach(b=>b.y-=6);
+        bullets = bullets.filter(b=>b.y>-20);
+
+        let edgeHit = false;
+
+        enemies.forEach(enemy=>{
+            if(!enemy.alive) return;
+            enemy.x += enemyDir * enemySpeed;
+            if(enemy.x < 10 || enemy.x + enemy.w > canvas.width - 10){
+                edgeHit = true;
+            }
+        });
+
+        if(edgeHit){
+            enemyDir *= -1;
+            enemies.forEach(enemy=>{
+                enemy.y += 18;
+            });
+        }
+
+        bullets.forEach(bullet=>{
+            enemies.forEach(enemy=>{
+                if(enemy.alive && collision(bullet, enemy)){
+                    enemy.alive = false;
+                    bullet.y = -999;
+                    score += 10;
+                    document.getElementById("score").textContent = score;
+                }
+            });
+        });
+
+        if(enemies.every(e=>!e.alive)){
+            enemySpeed += 0.25;
+            for(let row=0; row<4; row++){
+                for(let col=0; col<7; col++){
+                    enemies.push({x:45+col*50,y:55+row*38,w:32,h:22,alive:true});
+                }
+            }
+        }
+
+        enemies.forEach(enemy=>{
+            if(enemy.alive && enemy.y + enemy.h >= player.y){
+                endGame();
+            }
+        });
+    }
+
+    draw();
+    requestAnimationFrame(update);
+}
+
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle="#020617";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle="white";
+    for(let i=0;i<55;i++){
+        ctx.fillRect((i*73)%canvas.width,(i*41)%canvas.height,2,2);
+    }
+
+    drawPlayer();
+    drawEnemies();
+    drawBullets();
+
+    if(gameOver){
+        ctx.fillStyle="rgba(0,0,0,0.7)";
+        ctx.fillRect(55,190,310,120);
+        ctx.fillStyle="white";
+        ctx.font="28px Arial";
+        ctx.fillText("Game Over",135,235);
+        ctx.font="16px Arial";
+        ctx.fillText("Tryck Starta om",155,270);
+    }
+}
+
+restart();
+update();
+</script>
+
+</body>
+</html>
