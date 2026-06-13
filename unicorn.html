@@ -67,29 +67,41 @@ function showGame(id){
     document.getElementById(id).classList.remove("hidden");
 }
 
-/* STJÄRNSPEL MED NIVÅER */
+/* STJÄRNSPEL */
 const starCanvas=document.getElementById("starCanvas");
 const sctx=starCanvas.getContext("2d");
 
-let unicorn, stars, starScore, starLevel;
+let unicorn,stars,starScore,starLevel,levelChanging,gameComplete;
 let starHigh=Number(localStorage.getItem("unicornStarHigh"))||0;
 document.getElementById("starHigh").textContent=starHigh;
+
+const levelThemes=[
+    {sky:"#bde9ff",ground:"#86efac",name:"Regnbågsängen",emoji:["🌈","☁️","🌸"]},
+    {sky:"#ffd6f3",ground:"#f9a8d4",name:"Rosa drömmen",emoji:["💖","🎀","🌸"]},
+    {sky:"#c4b5fd",ground:"#a7f3d0",name:"Magiska skogen",emoji:["🌳","✨","🦋"]},
+    {sky:"#fde68a",ground:"#86efac",name:"Solskenslandet",emoji:["☀️","🌼","☁️"]},
+    {sky:"#bfdbfe",ground:"#ddd6fe",name:"Kristallhimlen",emoji:["💎","⭐","🌈"]}
+];
 
 function restartStars(){
     unicorn={x:70,y:315,w:70,h:60,vx:0,vy:0,onGround:true};
     starScore=0;
     starLevel=1;
+    levelChanging=false;
+    gameComplete=false;
     createStarLevel();
     updateStarText();
 }
 
 function createStarLevel(){
     stars=[];
+    levelChanging=false;
+
     const count=4+starLevel;
     for(let i=0;i<count;i++){
         stars.push({
             x:90+Math.random()*540,
-            y:180+Math.random()*120,
+            y:190+Math.random()*110,
             r:24,
             taken:false
         });
@@ -103,17 +115,23 @@ function updateStarText(){
 }
 
 function nextStarLevel(){
-    starLevel++;
-    if(starLevel>5){
+    if(gameComplete)return;
+
+    if(starLevel>=5){
+        gameComplete=true;
+
         if(starScore>starHigh){
             starHigh=starScore;
             localStorage.setItem("unicornStarHigh",starHigh);
         }
+
         updateStarText();
         alert("Du klarade alla nivåer! 🦄⭐ Poäng: "+starScore);
         restartStars();
         return;
     }
+
+    starLevel++;
     createStarLevel();
     updateStarText();
 }
@@ -148,18 +166,28 @@ function drawStar(ctx,x,y,r){
     ctx.fill();
 }
 
-function starLoop(){
-    sctx.clearRect(0,0,720,420);
-    sctx.fillStyle="#bde9ff";
+function drawStarBackground(){
+    const theme=levelThemes[starLevel-1];
+
+    sctx.fillStyle=theme.sky;
     sctx.fillRect(0,0,720,420);
 
     sctx.font="44px Arial";
-    sctx.fillText("🌈",560,90);
-    sctx.fillText("☁️",120,90);
-    sctx.fillText("☁️",330,65);
+    sctx.fillText(theme.emoji[0],550,90);
+    sctx.fillText(theme.emoji[1],130,90);
+    sctx.fillText(theme.emoji[2],335,70);
 
-    sctx.fillStyle="#86efac";
+    sctx.fillStyle=theme.ground;
     sctx.fillRect(0,365,720,55);
+
+    sctx.fillStyle="#7c3aed";
+    sctx.font="22px Arial";
+    sctx.fillText(theme.name,25,35);
+}
+
+function starLoop(){
+    sctx.clearRect(0,0,720,420);
+    drawStarBackground();
 
     unicorn.vy+=0.42;
     unicorn.x+=unicorn.vx;
@@ -176,6 +204,7 @@ function starLoop(){
 
     stars.forEach(st=>{
         if(st.taken)return;
+
         drawStar(sctx,st.x,st.y,st.r);
 
         const ux=unicorn.x+35;
@@ -186,10 +215,12 @@ function starLoop(){
         if(Math.sqrt(dx*dx+dy*dy)<65){
             st.taken=true;
             starScore++;
+
             if(starScore>starHigh){
                 starHigh=starScore;
                 localStorage.setItem("unicornStarHigh",starHigh);
             }
+
             updateStarText();
         }
     });
@@ -197,17 +228,20 @@ function starLoop(){
     sctx.font="62px Arial";
     sctx.fillText("🦄",unicorn.x,unicorn.y+55);
 
-    if(stars.every(s=>s.taken)){
+    if(stars.length>0 && stars.every(s=>s.taken) && !levelChanging){
+        levelChanging=true;
+
         sctx.fillStyle="#7c3aed";
         sctx.font="34px Arial";
         sctx.fillText("Nivå klar! 🌟",265,200);
-        setTimeout(nextStarLevel,500);
+
+        setTimeout(nextStarLevel,900);
     }
 
     requestAnimationFrame(starLoop);
 }
 
-/* MEMORY MED FLER KORT */
+/* MEMORY */
 const emojis=["🦄","🌈","⭐","💖","🎀","🍭","☁️","🌸","🧁","💎"];
 let memoryCards,first,second,locked,moves,found;
 let memoryHigh=localStorage.getItem("unicornMemoryHigh");
@@ -243,7 +277,7 @@ function startMemory(){
                     first=null;second=null;
 
                     if(found===memoryCards.length){
-                        if(!memoryHigh || moves<Number(memoryHigh)){
+                        if(!memoryHigh||moves<Number(memoryHigh)){
                             memoryHigh=moves;
                             localStorage.setItem("unicornMemoryHigh",memoryHigh);
                             document.getElementById("memoryHigh").textContent=memoryHigh;
@@ -265,7 +299,7 @@ function startMemory(){
     });
 }
 
-/* REGNBÅGAR MED 1 MINUT OCH HIGHSCORE */
+/* REGNBÅGAR */
 const rainbowCanvas=document.getElementById("rainbowCanvas");
 const rctx=rainbowCanvas.getContext("2d");
 
@@ -293,7 +327,8 @@ rainbowCanvas.addEventListener("click",e=>{
     rainbows.forEach(rb=>{
         const dx=x-rb.x;
         const dy=y-rb.y;
-        if(!rb.hit && Math.sqrt(dx*dx+dy*dy)<80){
+
+        if(!rb.hit&&Math.sqrt(dx*dx+dy*dy)<80){
             rb.hit=true;
             rainbowScore++;
             document.getElementById("rainbowScore").textContent=rainbowScore;
@@ -310,6 +345,7 @@ rainbowCanvas.addEventListener("click",e=>{
 function drawRainbow(ctx,x,y){
     ctx.lineWidth=12;
     const colors=["#ef4444","#f97316","#facc15","#22c55e","#3b82f6","#a855f7"];
+
     colors.forEach((c,i)=>{
         ctx.strokeStyle=c;
         ctx.beginPath();
