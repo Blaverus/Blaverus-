@@ -3,24 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Blaverus Block World 2.0</title>
+<title>Blaverus Block World 3.0</title>
 <style>
 body{margin:0;font-family:Arial,sans-serif;background:#0d1117;color:white;text-align:center}
-header{padding:20px;background:linear-gradient(135deg,#0066ff,#00aaff)}
-canvas{background:#7dd3fc;border:3px solid #0066ff;margin-top:15px;max-width:95%;touch-action:none}
+header{padding:18px;background:linear-gradient(135deg,#0066ff,#00aaff)}
+canvas{background:#7dd3fc;border:3px solid #0066ff;margin-top:12px;max-width:95%;touch-action:none}
 button{padding:10px 14px;margin:4px;border:0;border-radius:9px;background:#0066ff;color:white;font-size:1rem;cursor:pointer}
-.panel{margin:10px auto;max-width:900px}
+.panel{margin:10px auto;max-width:950px}
 a{color:#00aaff}
 </style>
 </head>
 <body>
 
 <header>
-<h1>⛏️ Block World 2.0</h1>
-<p>Gräv, samla material och bygg</p>
+<h1>⛏️ Block World 3.0</h1>
+<p>Större värld, kamera och byggande</p>
 </header>
 
-<canvas id="game" width="700" height="420"></canvas>
+<canvas id="game" width="800" height="420"></canvas>
 
 <div class="panel">
 <button onclick="moveLeft()">⬅️</button>
@@ -32,6 +32,8 @@ a{color:#00aaff}
 <button onclick="selectBlock('stone')">Sten</button>
 <button onclick="selectBlock('wood')">Trä</button>
 <button onclick="selectBlock('leaf')">Löv</button>
+<button onclick="saveWorld()">Spara</button>
+<button onclick="loadWorld()">Ladda</button>
 </div>
 
 <p>
@@ -46,7 +48,7 @@ Trä: <span id="woodCount">0</span> |
 Löv: <span id="leafCount">0</span>
 </p>
 
-<p>Klicka på block för att gräva eller bygga. Tangenter: A/D, W eller mellanslag.</p>
+<p>Tangenter: A/D för att gå, W eller mellanslag för att hoppa. Klicka för att gräva/bygga.</p>
 <p><a href="index.html">← Tillbaka till Blaverus</a></p>
 
 <script>
@@ -55,8 +57,9 @@ const ctx = canvas.getContext("2d");
 
 const tile = 28;
 const rows = 15;
-const cols = 25;
+const cols = 80;
 
+let cameraX = 0;
 let mode = "dig";
 let selectedBlock = "dirt";
 
@@ -86,31 +89,45 @@ function createWorld(){
         world[y] = [];
 
         for(let x=0;x<cols;x++){
-            if(y > 11) world[y][x] = "stone";
-            else if(y > 8) world[y][x] = "dirt";
-            else if(y === 8) world[y][x] = "grass";
+            const hill = Math.floor(Math.sin(x * 0.25) * 2);
+            const ground = 9 + hill;
+
+            if(y > ground + 2) world[y][x] = "stone";
+            else if(y > ground) world[y][x] = "dirt";
+            else if(y === ground) world[y][x] = "grass";
             else world[y][x] = "";
         }
     }
 
-    // Träd
-    addTree(5,7);
-    addTree(13,7);
-    addTree(20,7);
+    for(let x=5;x<cols;x+=9){
+        const groundY = findGround(x);
+        if(groundY > 5) addTree(x, groundY - 1);
+    }
 
-    // Sten i marken
-    world[10][3] = "stone";
-    world[10][4] = "stone";
-    world[11][17] = "stone";
-    world[11][18] = "stone";
+    for(let i=0;i<25;i++){
+        const x = Math.floor(Math.random() * cols);
+        const y = Math.floor(Math.random() * 4) + 10;
+        if(world[y] && world[y][x]) world[y][x] = "stone";
+    }
+}
+
+function findGround(x){
+    for(let y=0;y<rows;y++){
+        if(world[y][x] === "grass"){
+            return y;
+        }
+    }
+    return 9;
 }
 
 function addTree(x,y){
+    if(x<2 || x>cols-3 || y<5) return;
+
     world[y][x] = "wood";
     world[y-1][x] = "wood";
     world[y-2][x] = "wood";
 
-    for(let yy=y-4; yy<=y-2; yy++){
+    for(let yy=y-5; yy<=y-3; yy++){
         for(let xx=x-2; xx<=x+2; xx++){
             if(xx>=0 && xx<cols && yy>=0 && yy<rows){
                 world[yy][xx] = "leaf";
@@ -118,7 +135,7 @@ function addTree(x,y){
         }
     }
 
-    world[y-5][x] = "leaf";
+    world[y-6][x] = "leaf";
 }
 
 function setMode(newMode){
@@ -146,8 +163,8 @@ function updateInventory(){
     document.getElementById("leafCount").textContent = inventory.leaf;
 }
 
-function moveLeft(){ player.vx = -3; }
-function moveRight(){ player.vx = 3; }
+function moveLeft(){ player.vx = -3.2; }
+function moveRight(){ player.vx = 3.2; }
 
 function jump(){
     if(player.onGround){
@@ -165,8 +182,12 @@ document.addEventListener("keydown", e=>{
         jump();
     }
 
-    if(e.key==="1") setMode("dig");
-    if(e.key==="2") setMode("build");
+    if(e.key==="1") selectBlock("dirt");
+    if(e.key==="2") selectBlock("stone");
+    if(e.key==="3") selectBlock("wood");
+    if(e.key==="4") selectBlock("leaf");
+    if(e.key.toLowerCase()==="g") setMode("dig");
+    if(e.key.toLowerCase()==="b") setMode("build");
 });
 
 document.addEventListener("keyup", e=>{
@@ -180,7 +201,7 @@ canvas.addEventListener("click", e=>{
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
 
-    const mouseX = (e.clientX - rect.left) * scaleX;
+    const mouseX = (e.clientX - rect.left) * scaleX + cameraX;
     const mouseY = (e.clientY - rect.top) * scaleY;
 
     const x = Math.floor(mouseX / tile);
@@ -193,7 +214,7 @@ canvas.addEventListener("click", e=>{
 
     const distance = Math.abs(playerTileX - x) + Math.abs(playerTileY - y);
 
-    if(distance > 5){
+    if(distance > 6){
         alert("Du är för långt bort från blocket.");
         return;
     }
@@ -231,7 +252,7 @@ function update(){
     player.x += player.vx;
 
     if(player.x < 0) player.x = 0;
-    if(player.x + player.w > canvas.width) player.x = canvas.width - player.w;
+    if(player.x + player.w > cols * tile) player.x = cols * tile - player.w;
 
     if(
         isSolidAt(player.x, player.y) ||
@@ -262,40 +283,48 @@ function update(){
         player.vy = 0;
     }
 
+    cameraX = player.x - canvas.width / 2 + player.w / 2;
+
+    if(cameraX < 0) cameraX = 0;
+    if(cameraX > cols * tile - canvas.width) cameraX = cols * tile - canvas.width;
+
     draw();
     requestAnimationFrame(update);
 }
 
 function drawBlock(block,x,y){
+    const screenX = x * tile - cameraX;
+    const screenY = y * tile;
+
     if(block === "grass"){
         ctx.fillStyle = "#22c55e";
-        ctx.fillRect(x*tile,y*tile,tile,tile);
+        ctx.fillRect(screenX,screenY,tile,tile);
         ctx.fillStyle = "#8b5a2b";
-        ctx.fillRect(x*tile,y*tile+8,tile,tile-8);
+        ctx.fillRect(screenX,screenY+8,tile,tile-8);
     }
 
     if(block === "dirt"){
         ctx.fillStyle = "#8b5a2b";
-        ctx.fillRect(x*tile,y*tile,tile,tile);
+        ctx.fillRect(screenX,screenY,tile,tile);
     }
 
     if(block === "stone"){
         ctx.fillStyle = "#64748b";
-        ctx.fillRect(x*tile,y*tile,tile,tile);
+        ctx.fillRect(screenX,screenY,tile,tile);
     }
 
     if(block === "wood"){
         ctx.fillStyle = "#92400e";
-        ctx.fillRect(x*tile,y*tile,tile,tile);
+        ctx.fillRect(screenX,screenY,tile,tile);
     }
 
     if(block === "leaf"){
         ctx.fillStyle = "#16a34a";
-        ctx.fillRect(x*tile,y*tile,tile,tile);
+        ctx.fillRect(screenX,screenY,tile,tile);
     }
 
     ctx.strokeStyle = "rgba(0,0,0,0.25)";
-    ctx.strokeRect(x*tile,y*tile,tile,tile);
+    ctx.strokeRect(screenX,screenY,tile,tile);
 }
 
 function draw(){
@@ -306,11 +335,15 @@ function draw(){
 
     ctx.fillStyle = "#facc15";
     ctx.beginPath();
-    ctx.arc(620,65,28,0,Math.PI*2);
+    ctx.arc(650 - cameraX * 0.1,65,28,0,Math.PI*2);
     ctx.fill();
 
+    const startCol = Math.floor(cameraX / tile);
+    const endCol = Math.ceil((cameraX + canvas.width) / tile);
+
     for(let y=0;y<rows;y++){
-        for(let x=0;x<cols;x++){
+        for(let x=startCol;x<=endCol;x++){
+            if(x < 0 || x >= cols) continue;
             const block = world[y][x];
             if(block){
                 drawBlock(block,x,y);
@@ -318,15 +351,43 @@ function draw(){
         }
     }
 
-    // Spelare
+    const playerScreenX = player.x - cameraX;
+
     ctx.fillStyle = "#2563eb";
-    ctx.fillRect(player.x,player.y,player.w,player.h);
+    ctx.fillRect(playerScreenX,player.y,player.w,player.h);
 
     ctx.fillStyle = "#facc15";
-    ctx.fillRect(player.x+5,player.y+4,12,10);
+    ctx.fillRect(playerScreenX+5,player.y+4,12,10);
 
     ctx.fillStyle = "#111";
-    ctx.fillRect(player.x+14,player.y+7,3,3);
+    ctx.fillRect(playerScreenX+14,player.y+7,3,3);
+}
+
+function saveWorld(){
+    const saveData = {
+        world: world,
+        inventory: inventory,
+        player: player
+    };
+
+    localStorage.setItem("blockWorldSave", JSON.stringify(saveData));
+    alert("Världen sparad!");
+}
+
+function loadWorld(){
+    const data = localStorage.getItem("blockWorldSave");
+
+    if(!data){
+        alert("Ingen sparad värld hittades.");
+        return;
+    }
+
+    const saveData = JSON.parse(data);
+    world = saveData.world;
+    inventory = saveData.inventory;
+    player = saveData.player;
+    updateInventory();
+    alert("Världen laddad!");
 }
 
 createWorld();
