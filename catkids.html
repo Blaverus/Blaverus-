@@ -8,11 +8,17 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(#ffe4f3,#dbeafe);color:#4a044e;text-align:center}
 header{padding:24px;background:linear-gradient(135deg,#fb7185,#f472b6,#60a5fa);color:white}
-.box{max-width:950px;margin:18px auto;background:white;border-radius:24px;padding:18px;box-shadow:0 10px 25px #0002}
-button{padding:14px 20px;margin:7px;border:0;border-radius:999px;background:#ec4899;color:white;font-size:1rem;cursor:pointer}
-canvas{background:#bfdbfe;border:5px solid #f9a8d4;border-radius:22px;max-width:96%;touch-action:none}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.box{max-width:980px;margin:18px auto;background:white;border-radius:24px;padding:18px;box-shadow:0 10px 25px #0002}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
 .card{background:#ffe4f3;border-radius:18px;padding:14px}
+button{padding:13px 18px;margin:6px;border:0;border-radius:999px;background:#ec4899;color:white;font-size:1rem;cursor:pointer}
+canvas{background:#bfdbfe;border:5px solid #f9a8d4;border-radius:22px;max-width:96%;touch-action:none}
+.hidden{display:none}
+.big{font-size:3rem}
+.playArea{min-height:260px}
+.memoryGrid{display:grid;grid-template-columns:repeat(4,90px);gap:12px;justify-content:center}
+.memCard{width:90px;height:90px;font-size:2.5rem;border-radius:18px;background:#ffe4f3;border:4px solid #f9a8d4}
+.choice{font-size:2.2rem;min-width:80px}
 a{color:#7c3aed;font-weight:bold}
 </style>
 </head>
@@ -20,7 +26,7 @@ a{color:#7c3aed;font-weight:bold}
 
 <header>
 <h1>🐱 Blaverus Cat Kids</h1>
-<p>10 kattspel med nivåer och rekord</p>
+<p>10 riktiga katt-minispel med highscore</p>
 </header>
 
 <div class="box">
@@ -31,196 +37,309 @@ a{color:#7c3aed;font-weight:bold}
 <div class="box">
 <h2 id="title">🐾 Välj ett spel</h2>
 <p id="info">Klicka på ett minispel ovan.</p>
-<p>Nivå: <span id="level">1</span> | Poäng: <span id="score">0</span> | Highscore: <span id="high">0</span></p>
-<canvas id="game" width="760" height="430"></canvas><br>
-<button onclick="moveLeft()">⬅️</button>
-<button onclick="jump()">⬆️ Hoppa</button>
-<button onclick="moveRight()">➡️</button>
-<button onclick="startGame(currentGame)">Starta om</button>
+<p>Poäng: <span id="score">0</span> | Highscore: <span id="high">0</span> | Tid: <span id="time">-</span></p>
+
+<canvas id="canvas" width="760" height="420"></canvas>
+
+<div id="htmlGame" class="playArea hidden"></div>
+
+<div id="controls">
+<button onclick="left()">⬅️</button>
+<button onclick="jump()">⬆️</button>
+<button onclick="right()">➡️</button>
+<button onclick="action()">⭐ Action</button>
+<button onclick="restart()">Starta om</button>
+</div>
 </div>
 
 <p><a href="index.html">← Tillbaka till Blaverus</a></p>
 
 <script>
-const canvas=document.getElementById("game");
+const canvas=document.getElementById("canvas");
 const ctx=canvas.getContext("2d");
+const htmlGame=document.getElementById("htmlGame");
+
+let current=null, score=0, high=0, timeLeft="-", timer=null, loopId=null;
+let player={x:360,y:330,w:55,h:55,vx:0,vy:0,onGround:true};
+let objects=[], keys={}, state={};
 
 const games=[
- {id:"fish",name:"🐟 Fånga fisken",goal:"Samla alla fiskar"},
- {id:"milk",name:"🥛 Mjölkjakten",goal:"Samla mjölkglas"},
- {id:"yarn",name:"🧶 Garnbollar",goal:"Samla garnbollar"},
- {id:"mouse",name:"🐭 Fånga möss",goal:"Fånga mössen"},
- {id:"stars",name:"⭐ Kattstjärnor",goal:"Samla stjärnor"},
- {id:"hearts",name:"💖 Hjärtan",goal:"Samla hjärtan"},
- {id:"butterfly",name:"🦋 Fjärilar",goal:"Fånga fjärilar"},
- {id:"cookies",name:"🍪 Kattkakor",goal:"Samla kakor"},
- {id:"rainbow",name:"🌈 Regnbågskatt",goal:"Samla regnbågar"},
- {id:"crown",name:"👑 Kattkrona",goal:"Hitta kronorna"}
-];
-
-let currentGame=null, level=1, score=0, high=0, player, items=[], keys={}, changing=false;
-
-const emojiMap={
- fish:"🐟",milk:"🥛",yarn:"🧶",mouse:"🐭",stars:"⭐",
- hearts:"💖",butterfly:"🦋",cookies:"🍪",rainbow:"🌈",crown:"👑"
-};
-
-const bgMap=[
- ["#bfdbfe","#86efac"],["#ffd6f3","#f9a8d4"],["#c4b5fd","#a7f3d0"],
- ["#fde68a","#86efac"],["#bae6fd","#ddd6fe"]
+["fish","🐟 Fånga fiskar","Fånga fallande fiskar med katten"],
+["memory","🧶 Garn-memory","Hitta alla par"],
+["mouse","🐭 Klicka mössen","Klicka på mössen innan tiden tar slut"],
+["cups","🥛 Mjölkkoppar","Hitta mjölken under rätt kopp"],
+["simon","🐾 Tassminne","Kom ihåg ordningen"],
+["colors","🌈 Färgmatchning","Välj rätt färg"],
+["puzzle","🧩 Kattpussel","Klicka rutorna i rätt ordning"],
+["jump","🐱 Katthopp","Hoppa över hinder"],
+["bubble","🫧 Kattbubblor","Klicka på bubblorna"],
+["crown","👑 Kronjakten","Samla kronor i flera nivåer"]
 ];
 
 const menu=document.getElementById("menu");
 games.forEach(g=>{
  const div=document.createElement("div");
  div.className="card";
- div.innerHTML=`<h3>${g.name}</h3><p>${g.goal}</p><button onclick="startGame('${g.id}')">Spela</button>`;
+ div.innerHTML=`<h3>${g[1]}</h3><p>${g[2]}</p><button onclick="start('${g[0]}')">Spela</button>`;
  menu.appendChild(div);
 });
 
-function startGame(id){
- currentGame=id;
- level=1;
- score=0;
- high=Number(localStorage.getItem("cat_"+id))||0;
- player={x:60,y:315,w:65,h:60,vx:0,vy:0,onGround:true};
- changing=false;
- makeLevel();
- updateText();
+function setText(title,info){
+ document.getElementById("title").textContent=title;
+ document.getElementById("info").textContent=info;
 }
-
-function makeLevel(){
- items=[];
- changing=false;
- const count=4+level;
- for(let i=0;i<count;i++){
-   items.push({
-     x:90+Math.random()*580,
-     y:160+Math.random()*140,
-     taken:false
-   });
- }
-}
-
-function updateText(){
- const g=games.find(x=>x.id===currentGame);
- document.getElementById("title").textContent=g?g.name:"🐾 Välj ett spel";
- document.getElementById("info").textContent=g?g.goal:"Klicka på ett minispel ovan.";
- document.getElementById("level").textContent=level;
+function updateHud(){
  document.getElementById("score").textContent=score;
  document.getElementById("high").textContent=high;
+ document.getElementById("time").textContent=timeLeft;
 }
-
-function moveLeft(){player.vx=-3.4;setTimeout(()=>player.vx=0,250)}
-function moveRight(){player.vx=3.4;setTimeout(()=>player.vx=0,250)}
-function jump(){
- if(player.onGround){
-   player.vy=-11;
-   player.onGround=false;
+function saveHigh(){
+ if(score>high){
+   high=score;
+   localStorage.setItem("catHigh_"+current,high);
  }
+ updateHud();
 }
+function clearAll(){
+ if(timer)clearInterval(timer);
+ if(loopId)cancelAnimationFrame(loopId);
+ timer=null;loopId=null;
+ objects=[];state={};
+ htmlGame.innerHTML="";
+ htmlGame.classList.add("hidden");
+ canvas.classList.remove("hidden");
+ score=0;timeLeft="-";
+}
+function start(id){
+ clearAll();
+ current=id;
+ high=Number(localStorage.getItem("catHigh_"+id))||0;
+ player={x:360,y:330,w:55,h:55,vx:0,vy:0,onGround:true};
+ const g=games.find(x=>x[0]===id);
+ setText(g[1],g[2]);
+ updateHud();
 
+ if(id==="fish") startFish();
+ if(id==="memory") startMemory();
+ if(id==="mouse") startMouse();
+ if(id==="cups") startCups();
+ if(id==="simon") startSimon();
+ if(id==="colors") startColors();
+ if(id==="puzzle") startPuzzle();
+ if(id==="jump") startJumpGame();
+ if(id==="bubble") startBubble();
+ if(id==="crown") startCrown();
+}
+function restart(){ if(current)start(current); }
+
+function background(){
+ ctx.clearRect(0,0,760,420);
+ ctx.fillStyle="#bfdbfe"; ctx.fillRect(0,0,760,420);
+ ctx.font="42px Arial";
+ ctx.fillText("☁️",80,80); ctx.fillText("☁️",520,70); ctx.fillText("🌸",650,120);
+ ctx.fillStyle="#86efac"; ctx.fillRect(0,365,760,55);
+}
+function drawCat(x,y){
+ ctx.font="58px Arial";
+ ctx.fillText("🐱",x,y+50);
+}
+function hit(a,b){
+ return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+}
+function left(){player.vx=-5;setTimeout(()=>player.vx=0,160)}
+function right(){player.vx=5;setTimeout(()=>player.vx=0,160)}
+function jump(){
+ if(player.onGround){player.vy=-11;player.onGround=false;}
+}
+function action(){
+ if(current==="fish"||current==="jump"||current==="crown") jump();
+}
 document.addEventListener("keydown",e=>{
- if(!currentGame)return;
- if(e.key==="ArrowLeft")player.vx=-3.4;
- if(e.key==="ArrowRight")player.vx=3.4;
- if(e.code==="Space"||e.key==="ArrowUp"){e.preventDefault();jump()}
+ keys[e.key]=true;
+ if(e.key==="ArrowLeft")player.vx=-5;
+ if(e.key==="ArrowRight")player.vx=5;
+ if(e.code==="Space"||e.key==="ArrowUp"){e.preventDefault();jump();}
 });
 document.addEventListener("keyup",e=>{
+ keys[e.key]=false;
  if(e.key==="ArrowLeft"||e.key==="ArrowRight")player.vx=0;
 });
 
-function nextLevel(){
- if(level>=5){
-   if(score>high){
-     high=score;
-     localStorage.setItem("cat_"+currentGame,high);
-   }
-   updateText();
-   alert("Du klarade alla nivåer! 🐱 Poäng: "+score);
-   startGame(currentGame);
-   return;
- }
- level++;
- makeLevel();
- updateText();
-}
-
-function drawCat(x,y){
- ctx.font="60px Arial";
- ctx.fillText("🐱",x,y+55);
-}
-
-function loop(){
- ctx.clearRect(0,0,760,430);
-
- const theme=bgMap[(level-1)%bgMap.length];
- ctx.fillStyle=theme[0];
- ctx.fillRect(0,0,760,430);
-
- ctx.font="42px Arial";
- ctx.fillText("☁️",120,80);
- ctx.fillText("☁️",360,55);
- ctx.fillText("🌸",610,90);
-
- ctx.fillStyle=theme[1];
- ctx.fillRect(0,365,760,65);
-
- if(currentGame){
-   player.vy+=0.42;
+/* 1 FALLANDE FISKAR */
+function startFish(){
+ timeLeft=45; updateHud();
+ timer=setInterval(()=>{timeLeft--; if(timeLeft<=0){endTimed();}},1000);
+ function loop(){
+   background();
+   if(Math.random()<0.035)objects.push({x:Math.random()*700,y:-30,w:40,h:40,vy:2+Math.random()*2,emoji:"🐟"});
    player.x+=player.vx;
-   player.y+=player.vy;
-
-   if(player.x<0)player.x=0;
-   if(player.x+player.w>760)player.x=760-player.w;
-
-   if(player.y>315){
-     player.y=315;
-     player.vy=0;
-     player.onGround=true;
-   }
-
-   ctx.font="42px Arial";
-   items.forEach(it=>{
-     if(it.taken)return;
-     ctx.fillText(emojiMap[currentGame],it.x,it.y);
-
-     const px=player.x+32;
-     const py=player.y+35;
-     const dx=px-it.x;
-     const dy=py-it.y;
-
-     if(Math.sqrt(dx*dx+dy*dy)<62){
-       it.taken=true;
-       score++;
-       if(score>high){
-         high=score;
-         localStorage.setItem("cat_"+currentGame,high);
-       }
-       updateText();
-     }
-   });
-
+   if(player.x<0)player.x=0;if(player.x>700)player.x=700;
+   objects.forEach(o=>{o.y+=o.vy;ctx.font="38px Arial";ctx.fillText(o.emoji,o.x,o.y);if(hit({x:player.x,y:player.y,w:55,h:55},o)){o.hit=true;score++;saveHigh();}});
+   objects=objects.filter(o=>!o.hit&&o.y<430);
    drawCat(player.x,player.y);
-
-   if(items.length>0 && items.every(i=>i.taken) && !changing){
-     changing=true;
-     ctx.fillStyle="#7c3aed";
-     ctx.font="34px Arial";
-     ctx.fillText("Nivå klar! 🐾",285,210);
-     setTimeout(nextLevel,850);
-   }
- }else{
-   ctx.fillStyle="#7c3aed";
-   ctx.font="34px Arial";
-   ctx.fillText("Välj ett kattspel ovan 🐱",220,210);
+   loopId=requestAnimationFrame(loop);
  }
-
- requestAnimationFrame(loop);
+ loop();
 }
 
-loop();
-</script>
+/* 2 MEMORY */
+function startMemory(){
+ canvas.classList.add("hidden"); htmlGame.classList.remove("hidden");
+ const emojis=["🐱","🐟","🧶","🥛","🐭","👑","⭐","💖"];
+ let cards=[...emojis,...emojis].sort(()=>Math.random()-.5),first=null,lock=false,moves=0,found=0;
+ htmlGame.innerHTML='<div class="memoryGrid" id="mg"></div>';
+ const mg=document.getElementById("mg");
+ cards.forEach(s=>{
+   const b=document.createElement("button"); b.className="memCard"; b.textContent="❔";
+   b.onclick=()=>{if(lock||b.textContent!=="❔")return;b.textContent=s;if(!first)first=b;else{moves++;score=moves;updateHud();if(first.textContent===b.textContent){found+=2;first=null;if(found===cards.length){score=Math.max(1,100-moves);saveHigh();alert("Du vann! 🧶");}}else{lock=true;setTimeout(()=>{first.textContent="❔";b.textContent="❔";first=null;lock=false;},800)}}};
+   mg.appendChild(b);
+ });
+}
 
+/* 3 KLICKA MÖSS */
+function startMouse(){
+ canvas.classList.add("hidden"); htmlGame.classList.remove("hidden");
+ timeLeft=30; updateHud();
+ htmlGame.innerHTML='<div id="mouseArea" style="height:300px;position:relative;background:#dbeafe;border-radius:20px;overflow:hidden"></div>';
+ const area=document.getElementById("mouseArea");
+ timer=setInterval(()=>{timeLeft--;updateHud();if(timeLeft<=0)endTimed();},1000);
+ state.spawn=setInterval(()=>{
+   const m=document.createElement("button");m.textContent="🐭";m.style.position="absolute";m.style.left=Math.random()*85+"%";m.style.top=Math.random()*75+"%";m.style.fontSize="2.5rem";
+   m.onclick=()=>{score++;saveHigh();m.remove();};
+   area.appendChild(m); setTimeout(()=>m.remove(),1600);
+ },600);
+}
+
+/* 4 MJÖLKKOPPAR */
+function startCups(){
+ canvas.classList.add("hidden"); htmlGame.classList.remove("hidden");
+ state.round=1; score=0; cupRound();
+}
+function cupRound(){
+ htmlGame.innerHTML="<h2>Vilken kopp har mjölken?</h2>";
+ const correct=Math.floor(Math.random()*3);
+ for(let i=0;i<3;i++){
+   const b=document.createElement("button");b.className="choice";b.textContent="🥤";
+   b.onclick=()=>{if(i===correct){score++;saveHigh();htmlGame.innerHTML="<h2>Rätt! 🥛</h2>";}else htmlGame.innerHTML="<h2>Oj! Där var den inte 😺</h2>";setTimeout(cupRound,900);};
+   htmlGame.appendChild(b);
+ }
+ updateHud();
+}
+
+/* 5 SIMON TASSAR */
+function startSimon(){
+ canvas.classList.add("hidden"); htmlGame.classList.remove("hidden");
+ state.seq=[]; state.input=[]; score=0; simonNext();
+}
+function simonNext(){
+ const opts=["🐾","🐱","🐟","🧶"];
+ state.seq.push(opts[Math.floor(Math.random()*opts.length)]);
+ state.input=[];
+ htmlGame.innerHTML="<h2>Kom ihåg ordningen</h2><div class='big'>"+state.seq.join(" ")+"</div>";
+ setTimeout(()=>{
+   htmlGame.innerHTML="<h2>Klicka ordningen</h2>";
+   opts.forEach(o=>{
+     const b=document.createElement("button");b.className="choice";b.textContent=o;
+     b.onclick=()=>simonPress(o);
+     htmlGame.appendChild(b);
+   });
+ },1200+state.seq.length*300);
+}
+function simonPress(o){
+ const idx=state.input.length;
+ if(o!==state.seq[idx]){alert("Fel ordning! Poäng: "+score);saveHigh();startSimon();return;}
+ state.input.push(o);
+ if(state.input.length===state.seq.length){score++;saveHigh();setTimeout(simonNext,600);}
+ updateHud();
+}
+
+/* 6 FÄRGMATCHNING */
+function startColors(){
+ canvas.classList.add("hidden"); htmlGame.classList.remove("hidden");
+ state.colors=[["Rosa","💖"],["Blå","🔵"],["Gul","⭐"],["Grön","🍀"],["Lila","💜"]];
+ colorRound();
+}
+function colorRound(){
+ const pick=state.colors[Math.floor(Math.random()*state.colors.length)];
+ htmlGame.innerHTML=`<h2>Klicka på: ${pick[0]}</h2><div class="big">${pick[1]}</div>`;
+ const shuffled=[...state.colors].sort(()=>Math.random()-.5);
+ shuffled.forEach(c=>{
+   const b=document.createElement("button");b.textContent=c[1];
+   b.onclick=()=>{if(c[0]===pick[0]){score++;saveHigh();colorRound();}else{alert("Oj! Testa igen 😺");}};
+   htmlGame.appendChild(b);
+ });
+ updateHud();
+}
+
+/* 7 PUSSEL */
+function startPuzzle(){
+ canvas.classList.add("hidden"); htmlGame.classList.remove("hidden");
+ state.next=1; score=0;
+ htmlGame.innerHTML="<h2>Klicka 1 till 9 i ordning</h2><div class='memoryGrid' id='pg'></div>";
+ let nums=[1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-.5);
+ const pg=document.getElementById("pg");
+ nums.forEach(n=>{
+   const b=document.createElement("button");b.className="memCard";b.textContent=n;
+   b.onclick=()=>{if(n===state.next){b.textContent="🐱";state.next++;score++;saveHigh();if(state.next===10){alert("Pusslet klart! 🧩");startPuzzle();}}};
+   pg.appendChild(b);
+ });
+}
+
+/* 8 KATTHOPP */
+function startJumpGame(){
+ objects=[];timeLeft="-";updateHud();
+ function loop(){
+   background();
+   player.vy+=.45; player.y+=player.vy; player.x+=player.vx;
+   if(player.y>315){player.y=315;player.vy=0;player.onGround=true}
+   if(Math.random()<.018)objects.push({x:760,y:325,w:35,h:40,emoji:"🪵"});
+   objects.forEach(o=>{o.x-=4;ctx.font="36px Arial";ctx.fillText(o.emoji,o.x,o.y+35);if(hit(player,o)){alert("Game over! Poäng: "+score);saveHigh();startJumpGame();return;} if(!o.done&&o.x+o.w<player.x){o.done=true;score++;saveHigh();}});
+   objects=objects.filter(o=>o.x>-60);
+   drawCat(player.x,player.y);
+   loopId=requestAnimationFrame(loop);
+ }
+ loop();
+}
+
+/* 9 BUBBLOR */
+function startBubble(){
+ canvas.classList.add("hidden"); htmlGame.classList.remove("hidden");
+ timeLeft=40; updateHud();
+ htmlGame.innerHTML='<div id="bubbleArea" style="height:310px;position:relative;background:#bfdbfe;border-radius:20px;overflow:hidden"></div>';
+ const area=document.getElementById("bubbleArea");
+ timer=setInterval(()=>{timeLeft--;updateHud();if(timeLeft<=0)endTimed();},1000);
+ state.spawn=setInterval(()=>{
+   const b=document.createElement("button");b.textContent="🫧";b.style.position="absolute";b.style.left=Math.random()*85+"%";b.style.top=Math.random()*75+"%";b.style.fontSize="2.7rem";
+   b.onclick=()=>{score++;saveHigh();b.remove();};
+   area.appendChild(b); setTimeout(()=>b.remove(),2200);
+ },750);
+}
+
+/* 10 KRONJAKTEN */
+function startCrown(){
+ objects=[]; state.level=1; makeCrowns();
+ function makeCrowns(){
+   objects=[]; for(let i=0;i<3+state.level;i++)objects.push({x:80+Math.random()*600,y:170+Math.random()*140,w:45,h:45,emoji:"👑"});
+ }
+ function loop(){
+   background();
+   player.vy+=.42;player.x+=player.vx;player.y+=player.vy;
+   if(player.x<0)player.x=0;if(player.x>700)player.x=700;
+   if(player.y>315){player.y=315;player.vy=0;player.onGround=true}
+   objects.forEach(o=>{ctx.font="40px Arial";ctx.fillText(o.emoji,o.x,o.y);if(hit(player,o)){o.hit=true;score++;saveHigh();}});
+   objects=objects.filter(o=>!o.hit);
+   if(objects.length===0){state.level++; if(state.level>5){alert("Alla nivåer klara! 👑");startCrown();return;} makeCrowns();}
+   drawCat(player.x,player.y);
+   loopId=requestAnimationFrame(loop);
+ }
+ loop();
+}
+
+function endTimed(){
+ saveHigh();
+ alert("Tiden är slut! Poäng: "+score);
+ restart();
+}
+</script>
 </body>
 </html>
