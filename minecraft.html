@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blaverus Block World</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#0d1117;color:white;text-align:center}
+header{padding:20px;background:linear-gradient(135deg,#0066ff,#00aaff)}
+canvas{background:#7dd3fc;border:3px solid #0066ff;margin-top:15px;max-width:95%;touch-action:none}
+button{padding:12px 16px;margin:5px;border:0;border-radius:10px;background:#0066ff;color:white;font-size:1rem}
+a{color:#00aaff}
+</style>
+</head>
+<body>
+
+<header>
+<h1>⛏️ Blaverus Block World</h1>
+<p>Gå, hoppa, gräv och bygg</p>
+</header>
+
+<canvas id="game" width="600" height="400"></canvas><br>
+
+<button onclick="moveLeft()">⬅️</button>
+<button onclick="jump()">⬆️ Hoppa</button>
+<button onclick="moveRight()">➡️</button>
+<button onclick="toggleMode()">Byt läge: <span id="modeText">Gräv</span></button>
+
+<p>Klicka på block för att gräva/bygga. Tangenter: A/D, W och mellanslag.</p>
+<p><a href="index.html">← Tillbaka till Blaverus</a></p>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const modeText = document.getElementById("modeText");
+
+const tile = 30;
+const rows = 14;
+const cols = 20;
+
+let mode = "dig";
+
+let world = [];
+let player = {
+    x: 90,
+    y: 180,
+    w: 24,
+    h: 34,
+    vx: 0,
+    vy: 0,
+    onGround: false
+};
+
+for(let y=0;y<rows;y++){
+    world[y] = [];
+    for(let x=0;x<cols;x++){
+        if(y > 9) world[y][x] = "dirt";
+        else if(y === 9) world[y][x] = "grass";
+        else world[y][x] = "";
+    }
+}
+
+function toggleMode(){
+    mode = mode === "dig" ? "build" : "dig";
+    modeText.textContent = mode === "dig" ? "Gräv" : "Bygg";
+}
+
+function moveLeft(){ player.vx = -3; }
+function moveRight(){ player.vx = 3; }
+function jump(){
+    if(player.onGround){
+        player.vy = -8;
+        player.onGround = false;
+    }
+}
+
+document.addEventListener("keydown", e=>{
+    if(e.key.toLowerCase()==="a") moveLeft();
+    if(e.key.toLowerCase()==="d") moveRight();
+    if(e.key.toLowerCase()==="w" || e.code==="Space"){
+        e.preventDefault();
+        jump();
+    }
+});
+
+document.addEventListener("keyup", e=>{
+    if(e.key.toLowerCase()==="a" || e.key.toLowerCase()==="d"){
+        player.vx = 0;
+    }
+});
+
+canvas.addEventListener("click", e=>{
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const mouseX = (e.clientX - rect.left) * scaleX;
+    const mouseY = (e.clientY - rect.top) * scaleY;
+
+    const x = Math.floor(mouseX / tile);
+    const y = Math.floor(mouseY / tile);
+
+    if(x < 0 || x >= cols || y < 0 || y >= rows) return;
+
+    if(mode === "dig"){
+        world[y][x] = "";
+    } else {
+        if(world[y][x] === ""){
+            world[y][x] = "dirt";
+        }
+    }
+});
+
+function isSolidAt(px, py){
+    const x = Math.floor(px / tile);
+    const y = Math.floor(py / tile);
+
+    if(x < 0 || x >= cols || y < 0 || y >= rows) return false;
+    return world[y][x] !== "";
+}
+
+function update(){
+    player.vy += 0.35;
+
+    player.x += player.vx;
+
+    if(player.x < 0) player.x = 0;
+    if(player.x + player.w > canvas.width) player.x = canvas.width - player.w;
+
+    if(
+        isSolidAt(player.x, player.y) ||
+        isSolidAt(player.x + player.w, player.y) ||
+        isSolidAt(player.x, player.y + player.h) ||
+        isSolidAt(player.x + player.w, player.y + player.h)
+    ){
+        player.x -= player.vx;
+    }
+
+    player.y += player.vy;
+    player.onGround = false;
+
+    if(
+        isSolidAt(player.x, player.y + player.h) ||
+        isSolidAt(player.x + player.w, player.y + player.h)
+    ){
+        player.y = Math.floor((player.y + player.h) / tile) * tile - player.h;
+        player.vy = 0;
+        player.onGround = true;
+    }
+
+    if(
+        isSolidAt(player.x, player.y) ||
+        isSolidAt(player.x + player.w, player.y)
+    ){
+        player.y = Math.floor(player.y / tile + 1) * tile;
+        player.vy = 0;
+    }
+
+    draw();
+    requestAnimationFrame(update);
+}
+
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle = "#7dd3fc";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    for(let y=0;y<rows;y++){
+        for(let x=0;x<cols;x++){
+            const block = world[y][x];
+            if(!block) continue;
+
+            if(block === "grass"){
+                ctx.fillStyle = "#22c55e";
+                ctx.fillRect(x*tile,y*tile,tile,tile);
+                ctx.fillStyle = "#8b5a2b";
+                ctx.fillRect(x*tile,y*tile+8,tile,tile-8);
+            }
+
+            if(block === "dirt"){
+                ctx.fillStyle = "#8b5a2b";
+                ctx.fillRect(x*tile,y*tile,tile,tile);
+            }
+
+            ctx.strokeStyle = "rgba(0,0,0,0.25)";
+            ctx.strokeRect(x*tile,y*tile,tile,tile);
+        }
+    }
+
+    ctx.fillStyle = "#2563eb";
+    ctx.fillRect(player.x,player.y,player.w,player.h);
+
+    ctx.fillStyle = "#facc15";
+    ctx.fillRect(player.x+5,player.y+5,14,10);
+}
+
+update();
+</script>
+
+</body>
+</html>
