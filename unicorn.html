@@ -6,70 +6,29 @@
 <title>Blaverus Unicorn Kids</title>
 <style>
 *{box-sizing:border-box}
-body{
-    margin:0;
-    font-family:Arial,sans-serif;
-    background:linear-gradient(180deg,#ffd6f3,#dbeafe);
-    color:#4a044e;
-    text-align:center;
-}
-header{
-    padding:25px;
-    background:linear-gradient(135deg,#ff7ad9,#a78bfa,#60a5fa);
-    color:white;
-}
-.menu button,.game button{
-    padding:14px 20px;
-    margin:8px;
-    border:0;
-    border-radius:999px;
-    background:#ff4fc3;
-    color:white;
-    font-size:1rem;
-    cursor:pointer;
-    box-shadow:0 6px 12px #0002;
-}
-.box{
-    max-width:850px;
-    margin:20px auto;
-    background:white;
-    border-radius:24px;
-    padding:20px;
-    box-shadow:0 10px 25px #0002;
-}
-canvas{
-    background:#bde9ff;
-    border:5px solid #ff8de3;
-    border-radius:22px;
-    max-width:96%;
-    touch-action:none;
-}
+body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(180deg,#ffd6f3,#dbeafe);color:#4a044e;text-align:center}
+header{padding:24px;background:linear-gradient(135deg,#ff7ad9,#a78bfa,#60a5fa);color:white}
+.box{max-width:900px;margin:18px auto;background:white;border-radius:24px;padding:18px;box-shadow:0 10px 25px #0002}
+button{padding:15px 22px;margin:8px;border:0;border-radius:999px;background:#ff4fc3;color:white;font-size:1.1rem;cursor:pointer}
+canvas{background:#bde9ff;border:5px solid #ff8de3;border-radius:22px;max-width:96%;touch-action:none}
 .hidden{display:none}
-.cardgrid{
-    display:grid;
-    grid-template-columns:repeat(4,80px);
-    gap:12px;
-    justify-content:center;
-}
-.card{
-    width:80px;
-    height:80px;
-    border:0;
-    border-radius:18px;
-    font-size:2rem;
-    background:#ffe4f7;
-}
+.cardgrid{display:grid;grid-template-columns:repeat(4,110px);gap:14px;justify-content:center}
+.card{width:110px;height:110px;font-size:3.2rem;background:#ffe4f7;border:4px solid #ff8de3;border-radius:22px}
 a{color:#7c3aed;font-weight:bold}
+@media(max-width:520px){
+    .cardgrid{grid-template-columns:repeat(3,95px)}
+    .card{width:95px;height:95px;font-size:2.7rem}
+}
 </style>
 </head>
 <body>
 
 <header>
 <h1>🦄 Blaverus Unicorn Kids</h1>
-<p>Rosa, regnbågar och barnspel</p>
+<p>Stora bilder, lugna spel och mycket rosa</p>
 </header>
 
-<div class="box menu">
+<div class="box">
 <h2>Välj spel</h2>
 <button onclick="showGame('stars')">⭐ Samla stjärnor</button>
 <button onclick="showGame('memory')">🌈 Färg-memory</button>
@@ -78,18 +37,18 @@ a{color:#7c3aed;font-weight:bold}
 
 <div id="stars" class="box game">
 <h2>⭐ Samla stjärnor</h2>
-<p>Hjälp enhörningen att samla stjärnor!</p>
-<p>Poäng: <span id="starScore">0</span></p>
-<canvas id="starCanvas" width="700" height="380"></canvas><br>
-<button onclick="starLeft()">⬅️</button>
+<p>Gå runt och samla alla stora stjärnor.</p>
+<p>Poäng: <span id="starScore">0</span> / <span id="starTotal">0</span></p>
+<canvas id="starCanvas" width="720" height="420"></canvas><br>
+<button onclick="starLeft()">⬅️ Vänster</button>
 <button onclick="starJump()">⬆️ Hoppa</button>
-<button onclick="starRight()">➡️</button>
+<button onclick="starRight()">➡️ Höger</button>
 <button onclick="restartStars()">Starta om</button>
 </div>
 
 <div id="memory" class="box game hidden">
 <h2>🌈 Färg-memory</h2>
-<p>Hitta alla par!</p>
+<p>Stora kort. Hitta alla par!</p>
 <p>Försök: <span id="moves">0</span></p>
 <div class="cardgrid" id="memoryGrid"></div>
 <button onclick="startMemory()">Starta om</button>
@@ -97,9 +56,9 @@ a{color:#7c3aed;font-weight:bold}
 
 <div id="rainbow" class="box game hidden">
 <h2>🎀 Fånga regnbågar</h2>
-<p>Klicka på regnbågarna innan de försvinner!</p>
+<p>Klicka på de stora regnbågarna. De stannar länge.</p>
 <p>Poäng: <span id="rainbowScore">0</span></p>
-<canvas id="rainbowCanvas" width="700" height="380"></canvas><br>
+<canvas id="rainbowCanvas" width="720" height="420"></canvas><br>
 <button onclick="startRainbow()">Starta om</button>
 </div>
 
@@ -111,101 +70,82 @@ function showGame(id){
     document.getElementById(id).classList.remove("hidden");
 }
 
-/* SPEL 1: SAMLA STJÄRNOR */
-const starCanvas = document.getElementById("starCanvas");
-const sctx = starCanvas.getContext("2d");
-let unicorn, stars, starScore, starKeys;
+/* SAMLA STJÄRNOR */
+const starCanvas=document.getElementById("starCanvas");
+const sctx=starCanvas.getContext("2d");
+let unicorn,stars,starScore;
 
 function restartStars(){
-    unicorn = {x:80,y:285,w:55,h:55,vx:0,vy:0,onGround:true};
-    stars = [];
-    starScore = 0;
-    starKeys = {};
-    document.getElementById("starScore").textContent = starScore;
-
-    for(let i=0;i<8;i++){
-        stars.push({
-            x:140+i*70,
-            y:120+Math.random()*130,
-            r:14,
-            taken:false
-        });
-    }
+    unicorn={x:70,y:315,w:70,h:60,vx:0,vy:0,onGround:true};
+    starScore=0;
+    stars=[
+        {x:130,y:285,r:24,taken:false},
+        {x:250,y:245,r:24,taken:false},
+        {x:370,y:290,r:24,taken:false},
+        {x:500,y:230,r:24,taken:false},
+        {x:620,y:285,r:24,taken:false}
+    ];
+    document.getElementById("starScore").textContent=starScore;
+    document.getElementById("starTotal").textContent=stars.length;
 }
-function starLeft(){unicorn.vx=-4;setTimeout(()=>unicorn.vx=0,200)}
-function starRight(){unicorn.vx=4;setTimeout(()=>unicorn.vx=0,200)}
+
+function starLeft(){unicorn.vx=-3.2;setTimeout(()=>unicorn.vx=0,260)}
+function starRight(){unicorn.vx=3.2;setTimeout(()=>unicorn.vx=0,260)}
 function starJump(){
     if(unicorn.onGround){
-        unicorn.vy=-10;
+        unicorn.vy=-11;
         unicorn.onGround=false;
     }
 }
+
 document.addEventListener("keydown",e=>{
-    if(e.key==="ArrowLeft") unicorn.vx=-4;
-    if(e.key==="ArrowRight") unicorn.vx=4;
-    if(e.code==="Space") starJump();
+    if(e.key==="ArrowLeft")unicorn.vx=-3.2;
+    if(e.key==="ArrowRight")unicorn.vx=3.2;
+    if(e.code==="Space")starJump();
 });
 document.addEventListener("keyup",e=>{
-    if(e.key==="ArrowLeft"||e.key==="ArrowRight") unicorn.vx=0;
+    if(e.key==="ArrowLeft"||e.key==="ArrowRight")unicorn.vx=0;
 });
 
 function drawUnicorn(ctx,x,y){
-    ctx.fillStyle="#fff";
-    ctx.fillRect(x,y+20,48,28);
-    ctx.fillStyle="#ffd1f1";
-    ctx.fillRect(x+34,y+7,25,24);
-    ctx.fillStyle="#7c3aed";
-    ctx.fillRect(x+50,y+16,4,4);
-
-    ctx.fillStyle="#ff4fc3";
-    ctx.fillRect(x+6,y+48,8,18);
-    ctx.fillRect(x+34,y+48,8,18);
-
-    ctx.fillStyle="#facc15";
-    ctx.beginPath();
-    ctx.moveTo(x+44,y+7);
-    ctx.lineTo(x+50,y-13);
-    ctx.lineTo(x+56,y+7);
-    ctx.fill();
-
-    ctx.fillStyle="#ff4fc3";
-    ctx.fillRect(x-16,y+22,18,6);
-    ctx.fillStyle="#60a5fa";
-    ctx.fillRect(x-16,y+30,18,6);
+    ctx.font="62px Arial";
+    ctx.fillText("🦄",x,y+55);
 }
+
 function drawStar(ctx,x,y,r){
     ctx.fillStyle="#facc15";
     ctx.beginPath();
     for(let i=0;i<10;i++){
-        const a=Math.PI/5*i;
+        const a=Math.PI/5*i-Math.PI/2;
         const rr=i%2===0?r:r/2;
         ctx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr);
     }
     ctx.closePath();
     ctx.fill();
 }
+
 function starLoop(){
-    sctx.clearRect(0,0,700,380);
+    sctx.clearRect(0,0,720,420);
     sctx.fillStyle="#bde9ff";
-    sctx.fillRect(0,0,700,380);
+    sctx.fillRect(0,0,720,420);
+
+    sctx.font="44px Arial";
+    sctx.fillText("🌈",560,90);
+    sctx.fillText("☁️",120,90);
+    sctx.fillText("☁️",330,65);
 
     sctx.fillStyle="#86efac";
-    sctx.fillRect(0,330,700,50);
+    sctx.fillRect(0,365,720,55);
 
-    sctx.font="38px Arial";
-    sctx.fillText("🌈",500,80);
-    sctx.fillText("☁️",120,80);
-    sctx.fillText("☁️",300,55);
-
-    unicorn.vy+=0.45;
+    unicorn.vy+=0.42;
     unicorn.x+=unicorn.vx;
     unicorn.y+=unicorn.vy;
 
     if(unicorn.x<0)unicorn.x=0;
-    if(unicorn.x+unicorn.w>700)unicorn.x=700-unicorn.w;
+    if(unicorn.x+unicorn.w>720)unicorn.x=720-unicorn.w;
 
-    if(unicorn.y>285){
-        unicorn.y=285;
+    if(unicorn.y>315){
+        unicorn.y=315;
         unicorn.vy=0;
         unicorn.onGround=true;
     }
@@ -214,12 +154,12 @@ function starLoop(){
         if(st.taken)return;
         drawStar(sctx,st.x,st.y,st.r);
 
-        if(
-            unicorn.x<st.x+20 &&
-            unicorn.x+unicorn.w>st.x-20 &&
-            unicorn.y<st.y+20 &&
-            unicorn.y+unicorn.h>st.y-20
-        ){
+        const ux=unicorn.x+35;
+        const uy=unicorn.y+35;
+        const dx=ux-st.x;
+        const dy=uy-st.y;
+
+        if(Math.sqrt(dx*dx+dy*dy)<60){
             st.taken=true;
             starScore++;
             document.getElementById("starScore").textContent=starScore;
@@ -230,16 +170,16 @@ function starLoop(){
 
     if(stars.every(s=>s.taken)){
         sctx.fillStyle="#7c3aed";
-        sctx.font="34px Arial";
-        sctx.fillText("Bra jobbat! 🦄",240,190);
+        sctx.font="36px Arial";
+        sctx.fillText("Bra jobbat! 🦄🌟",230,200);
     }
 
     requestAnimationFrame(starLoop);
 }
 
-/* SPEL 2: MEMORY */
-const emojis = ["🦄","🌈","⭐","💖","🎀","🍭","☁️","🌸"];
-let memoryCards, first, second, locked, moves, found;
+/* MEMORY */
+const emojis=["🦄","🌈","⭐","💖","🎀","🍭"];
+let memoryCards,first,second,locked,moves,found;
 
 function startMemory(){
     memoryCards=[...emojis,...emojis].sort(()=>Math.random()-0.5);
@@ -269,16 +209,14 @@ function startMemory(){
                 if(first.dataset.symbol===second.dataset.symbol){
                     found+=2;
                     first=null;second=null;
-                    if(found===memoryCards.length){
-                        setTimeout(()=>alert("Du vann! 🌈"),300);
-                    }
+                    if(found===memoryCards.length)setTimeout(()=>alert("Du vann! 🌈"),300);
                 }else{
                     locked=true;
                     setTimeout(()=>{
                         first.textContent="❔";
                         second.textContent="❔";
                         first=null;second=null;locked=false;
-                    },700);
+                    },1000);
                 }
             }
         };
@@ -287,7 +225,7 @@ function startMemory(){
     });
 }
 
-/* SPEL 3: FÅNGA REGNBÅGAR */
+/* REGNBÅGAR */
 const rainbowCanvas=document.getElementById("rainbowCanvas");
 const rctx=rainbowCanvas.getContext("2d");
 let rainbows=[],rainbowScore=0,rainbowTimer=0;
@@ -298,53 +236,59 @@ function startRainbow(){
     rainbowTimer=0;
     document.getElementById("rainbowScore").textContent=rainbowScore;
 }
+
 rainbowCanvas.addEventListener("click",e=>{
     const rect=rainbowCanvas.getBoundingClientRect();
     const x=(e.clientX-rect.left)*rainbowCanvas.width/rect.width;
     const y=(e.clientY-rect.top)*rainbowCanvas.height/rect.height;
 
     rainbows.forEach(rb=>{
-        if(!rb.hit && Math.abs(x-rb.x)<45 && Math.abs(y-rb.y)<35){
+        const dx=x-rb.x;
+        const dy=y-rb.y;
+        if(!rb.hit && Math.sqrt(dx*dx+dy*dy)<75){
             rb.hit=true;
             rainbowScore++;
             document.getElementById("rainbowScore").textContent=rainbowScore;
         }
     });
 });
+
 function drawRainbow(ctx,x,y){
-    ctx.lineWidth=8;
+    ctx.lineWidth=12;
     const colors=["#ef4444","#f97316","#facc15","#22c55e","#3b82f6","#a855f7"];
     colors.forEach((c,i)=>{
         ctx.strokeStyle=c;
         ctx.beginPath();
-        ctx.arc(x,y,45-i*6,Math.PI,0);
+        ctx.arc(x,y,65-i*8,Math.PI,0);
         ctx.stroke();
     });
 }
-function rainbowLoop(){
-    rctx.clearRect(0,0,700,380);
-    rctx.fillStyle="#bde9ff";
-    rctx.fillRect(0,0,700,380);
 
-    rctx.font="36px Arial";
-    rctx.fillText("🦄",60,320);
-    rctx.fillText("☁️",500,90);
-    rctx.fillText("☁️",250,70);
+function rainbowLoop(){
+    rctx.clearRect(0,0,720,420);
+    rctx.fillStyle="#bde9ff";
+    rctx.fillRect(0,0,720,420);
+
+    rctx.font="46px Arial";
+    rctx.fillText("🦄",65,350);
+    rctx.fillText("☁️",520,95);
+    rctx.fillText("☁️",250,75);
 
     rainbowTimer++;
-    if(rainbowTimer>55){
+
+    if(rainbowTimer>150){
         rainbowTimer=0;
         rainbows.push({
-            x:80+Math.random()*540,
-            y:90+Math.random()*190,
-            life:160,
+            x:120+Math.random()*480,
+            y:150+Math.random()*150,
+            life:420,
             hit:false
         });
     }
 
     rainbows.forEach(rb=>{
         rb.life--;
-        if(!rb.hit) drawRainbow(rctx,rb.x,rb.y);
+        if(!rb.hit)drawRainbow(rctx,rb.x,rb.y);
     });
 
     rainbows=rainbows.filter(rb=>rb.life>0&&!rb.hit);
